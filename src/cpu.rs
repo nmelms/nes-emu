@@ -21,6 +21,7 @@ pub enum AddressMode{
     Absolute,
     ZeroPage,
     ZeroPageX,
+    AbsoluteX,
 }
 
 
@@ -51,6 +52,7 @@ impl CPU {
         match opcode{
             0x69 => self.adc(AddressMode::Immediate),
             0x6D => self.adc(AddressMode::Absolute),
+            0x7D => self.adc(AddressMode::AbsoluteX),
             0x65 => self.adc(AddressMode::ZeroPage),
             0x75 => self.adc(AddressMode::ZeroPageX),
             _ => panic!("no matching opcode")
@@ -74,7 +76,12 @@ impl CPU {
                 value = self.rom[addr as usize];
             }
             AddressMode::ZeroPageX => {
-               value =  self.zero_page_x();
+               let addr =  self.zero_page_x();
+               value = self.rom[addr as usize];
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.rom[addr as usize];
             }
         }
 
@@ -94,8 +101,19 @@ impl CPU {
     pub fn zero_page_x(&mut self) -> u8 {
         let arg = self.rom[self.pc as usize];
         // using wrapping add instead of % 256
-        let value = arg.wrapping_add(self.x);
-        value
+        let addr = arg.wrapping_add(self.x);
+        addr 
+    }
+
+    pub fn absolute_x(&mut self) -> u16{
+        let first_byte:u16;
+        let second_byte:u16;
+        first_byte = (self.rom[self.pc as usize] as u16) << 8;
+        self.pc += 1;
+        second_byte = self.rom[self.pc as usize] as u16;
+        let arg = first_byte | second_byte;
+        let addr = arg + self.x as u16;
+        addr
     }
 
     pub fn am_absolute(&mut self) -> u16{
