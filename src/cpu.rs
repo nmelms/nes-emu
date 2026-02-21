@@ -30,7 +30,7 @@ impl CPU {
 
     pub fn new() -> Self{
         
-        let ROM = vec![0x69, 0xA9u8, 0x05, 0x69, 0x03];
+        let ROM = vec![0x69u8, 0x05];
         let a = 0;
         let x = 0;
         let y = 0;
@@ -40,17 +40,20 @@ impl CPU {
 
         Self{ROM, a, x, y, sp, pc, p}
     }
-    pub fn tick(&mut self, opcode: u8){
+
+    pub fn tick(&mut self,){
+        let opcode = self.ROM[self.pc as usize];
+        self.pc += 1;
 
         match opcode{
-            0x69 => self.adc(AddressMode::Immediate),
+            0x69 => {
+                self.adc(AddressMode::Immediate)},
             _ => panic!("no matching opcode")
         }
     }
 
     pub fn adc(&mut self, addr_mode: AddressMode) {
-        self.pc += 1;
-        let value:u16;
+        let value:u8;
 
         match addr_mode{
             AddressMode::Immediate => {
@@ -58,14 +61,10 @@ impl CPU {
             }
         }
 
-        // self.a = self.a + value + c;
-
-
+        self.a = self.a + value + (self.p & 0x01);
     }
     
     pub fn am_immediate(&mut self) -> u8 {
-        self.pc += 1;
-        let addr = self.pc as usize;
-        
+        self.ROM[self.pc as usize]
     }
 }
