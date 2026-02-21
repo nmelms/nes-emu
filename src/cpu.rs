@@ -4,7 +4,7 @@ pub struct CPU {
     // accumulator
     pub a: u8,
     // indexes
-    // x: u8,
+    x: u8,
     // y: u8,
     // // stack pointer
     // sp: u8,
@@ -19,6 +19,8 @@ pub struct CPU {
 pub enum AddressMode{
     Immediate,
     Absolute,
+    ZeroPage,
+    ZeroPageX,
 }
 
 
@@ -27,15 +29,15 @@ impl CPU {
 
     pub fn new() -> Self{
         
-        let rom = vec![0x69u8, 0x05];
+        let rom = vec![0x69, 0x05];
         let a = 0;
-        // let x = 0;
+        let x = 0;
         // let y = 0;
         // let sp = 0;
         let pc = 0;
         let p = 0;
 
-        Self{rom, a, pc, p}
+        Self{rom, a, pc, p, x}
     }
 
     pub fn tick(&mut self,){
@@ -49,6 +51,8 @@ impl CPU {
         match opcode{
             0x69 => self.adc(AddressMode::Immediate),
             0x6D => self.adc(AddressMode::Absolute),
+            0x65 => self.adc(AddressMode::ZeroPage),
+            0x75 => self.adc(AddressMode::ZeroPageX),
             _ => panic!("no matching opcode")
         }
     }
@@ -65,6 +69,13 @@ impl CPU {
                 let addr = self.am_absolute();
                 value = self.rom[addr as usize];
             }
+            AddressMode::ZeroPage =>{
+                let addr = self.zero_page();
+                value = self.rom[addr as usize];
+            }
+            AddressMode::ZeroPageX => {
+               value =  self.zero_page_x();
+            }
         }
 
         self.a = self.a + value + (self.p & 0x01);
@@ -74,6 +85,17 @@ impl CPU {
     
     pub fn am_immediate(&mut self) -> u8 {
         self.rom[self.pc as usize]
+    }
+
+    pub fn zero_page(&mut self) -> u8{
+        let addr = self.rom[self.pc as usize];
+        addr
+    }
+    pub fn zero_page_x(&mut self) -> u8 {
+        let arg = self.rom[self.pc as usize];
+        // using wrapping add instead of % 256
+        let value = arg.wrapping_add(self.x);
+        value
     }
 
     pub fn am_absolute(&mut self) -> u16{
