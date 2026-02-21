@@ -2,7 +2,7 @@
 pub struct CPU {
     // registers
     // accumulator
-    a: u8,
+    pub a: u8,
     // indexes
     // x: u8,
     // y: u8,
@@ -18,7 +18,7 @@ pub struct CPU {
 
 pub enum AddressMode{
     Immediate,
-    // Absolute,
+    Absolute,
 }
 
 
@@ -47,8 +47,8 @@ impl CPU {
 
 
         match opcode{
-            0x69 => {
-                self.adc(AddressMode::Immediate)},
+            0x69 => self.adc(AddressMode::Immediate),
+            0x6D => self.adc(AddressMode::Absolute),
             _ => panic!("no matching opcode")
         }
     }
@@ -59,14 +59,30 @@ impl CPU {
         match addr_mode{
             AddressMode::Immediate => {
                 value = self.am_immediate();
+
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.rom[addr as usize];
             }
         }
 
         self.a = self.a + value + (self.p & 0x01);
+
+
     }
     
     pub fn am_immediate(&mut self) -> u8 {
         self.rom[self.pc as usize]
+    }
+
+    pub fn am_absolute(&mut self) -> u16{
+        let first_byte:u16;
+        let second_byte:u16;
+        first_byte = (self.rom[self.pc as usize] as u16) << 8;
+        self.pc += 1;
+        second_byte = self.rom[self.pc as usize] as u16;
+        first_byte | second_byte
     }
 
     pub fn is_end_of_program(&self) -> bool{
