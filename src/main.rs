@@ -4,5 +4,8 @@ use cpu::CPU;
 fn main() {
     let mut cpu = CPU::new();
 
-    cpu.tick();
+    while !cpu.is_end_of_program(){
+        cpu.tick();        
+    }    
+
 }
