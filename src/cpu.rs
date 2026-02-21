@@ -26,8 +26,8 @@ pub enum AddressMode {
 }
 
 impl CPU {
-    pub fn new() -> Self {
-        let ram = vec![0u8; 2048];
+    pub fn new(rom: Vec<u8>) -> Self {
+        let ram = rom;
         let a = 0;
         let x = 0;
         let y = 0;
@@ -54,7 +54,7 @@ impl CPU {
             0x75 => self.adc(AddressMode::ZeroPageX),
             0x61 => self.adc(AddressMode::IndirectX),
             0x71 => self.adc(AddressMode::IndirectY),
-            _ => panic!("no matching opcode"),
+            _ => panic!("no matching opcode. Got {}", opcode),
         }
     }
 
