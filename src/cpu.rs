@@ -1,3 +1,5 @@
+use crate::bus::Bus;
+
 pub struct CPU {
     // registers
     // accumulator
@@ -11,7 +13,8 @@ pub struct CPU {
     p: u8,
     // program countergi
     pc: u16,
-    ram: Vec<u8>,
+    bus: Bus,
+
 }
 
 pub enum AddressMode {
@@ -26,21 +29,20 @@ pub enum AddressMode {
 }
 
 impl CPU {
-    pub fn new(rom: Vec<u8>) -> Self {
-        let ram = rom;
+    pub fn new(bus: Bus) -> Self {
         let a = 0;
         let x = 0;
         let y = 0;
         // let sp = 0;
-        let pc = 0;
+        let pc = 0xC000;
         let p = 0;
 
-        Self { ram, a, pc, p, x, y }
+        Self { a, pc, p, x, y, bus }
     }
 
     pub fn tick(&mut self) {
         println!("tick");
-        let opcode = self.ram[self.pc as usize];
+        let opcode = self.bus.read(self.pc);
         if !self.is_end_of_program() {
             self.pc += 1;
         }
