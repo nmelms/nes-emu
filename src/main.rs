@@ -1,5 +1,6 @@
 mod cpu;
 mod bus;
+mod mapper_0;
 use std::{fs};
 
 use cpu::CPU;
