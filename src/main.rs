@@ -12,8 +12,9 @@ fn main() {
     let rom = res.unwrap();
     let bus =  Bus::new(rom);
     let mut cpu = CPU::new(bus);
+    let running = true;
 
-    while !cpu.is_end_of_program() {
+    while running {
         cpu.tick();
         println!("Value of a: {}", cpu.a)
     }
