@@ -1,16 +1,15 @@
-mod cpu;
 mod bus;
+mod cpu;
 mod mapper_0;
-use std::{fs};
+use std::fs;
 
-use cpu::CPU;
 use bus::Bus;
-
+use cpu::CPU;
 
 fn main() {
     let res = std::fs::read("nestest.nes");
     let rom = res.unwrap();
-    let bus =  Bus::new(rom);
+    let bus = Bus::new(rom);
     let mut cpu = CPU::new(bus);
     let running = true;
 
