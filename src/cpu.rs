@@ -29,6 +29,7 @@ pub enum AddressMode {
     IndirectX,
     IndirectY,
     Accumulator,
+    Indirect,
 }
 
 impl CPU {
@@ -79,6 +80,10 @@ impl CPU {
 
     pub fn jmp(&mut self, addr_mode: AddressMode) {
         match addr_mode {
+            AddressMode::Indirect => {
+               self.pc = self.indirect()
+
+            }
             AddressMode::Accumulator => {
                 
             }
@@ -223,6 +228,18 @@ impl CPU {
         }
 
         self.a = self.a + value + (self.p & 0x01);
+    }
+
+    pub fn indirect(&mut self) -> u16 {
+        self.pc += 1;
+        let low = self.bus.read(self.pc) as u16;
+        if low == 0xFF{
+            panic!("you need to impmenent the jmp bug")
+        }
+        self.pc += 1;
+        let high = (self.bus.read(self.pc) as u16) << 8;
+        high | low
+
     }
 
     pub fn indirect_x(&mut self) -> u16 {
