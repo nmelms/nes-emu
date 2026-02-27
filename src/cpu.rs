@@ -33,12 +33,15 @@ pub enum AddressMode {
 }
 
 impl CPU {
-    pub fn new(bus: Bus) -> Self {
+    pub fn new(mut bus: Bus) -> Self {
         let a = 0;
         let x = 0;
         let y = 0;
         // let sp = 0;
-        let pc = 0xC000;
+        let low = bus.read(0xFFFC) as u16;
+        let high = bus.read(0xFFFD) as u16;
+    
+        let pc = high << 8| low;
         let p = 0;
 
         Self {
@@ -74,48 +77,46 @@ impl CPU {
             0x7E => self.ror(AddressMode::AbsoluteX),
             // JMP
             0x4C => self.jmp(AddressMode::Absolute),
-            _ => panic!("no matching opcode. Got {:02X}", opcode),
+            0x6C => self.jmp(AddressMode::Indirect),
+            // unoffical noop
+            0xFA => self.noop(),
+            _ => {
+                let mut print_addr = 0x6004;
+                while self.bus.read(print_addr) != 0 {
+                    print!("{}", self.bus.read(print_addr) as char);
+                    print_addr += 1;
+                }
+                panic!("Opcode not implemented: Got {}", opcode)
+            }
         }
+        let mut print_addr = 0x6004;
+        while self.bus.read(print_addr) != 0 {
+            println!("{}", self.bus.read(print_addr));
+            print_addr += 1;
+        }
+    }
+
+    pub fn noop(&mut self) {
+        return;
     }
 
     pub fn jmp(&mut self, addr_mode: AddressMode) {
         match addr_mode {
-            AddressMode::Indirect => {
-               self.pc = self.indirect()
-
-            }
-            AddressMode::Accumulator => {
-                
-            }
-            AddressMode::Immediate => {
-                
-            }
+            AddressMode::Indirect => self.pc = self.indirect(),
+            AddressMode::Accumulator => {}
+            AddressMode::Immediate => {}
             AddressMode::Absolute => {
                 let addr = self.am_absolute();
                 self.pc = addr;
                 // value = self.bus.read(addr)
             }
-            AddressMode::ZeroPage => {
- 
-
-            }
-            AddressMode::ZeroPageX => {
-
-            }
-            AddressMode::AbsoluteX => {
-
-            }
-            AddressMode::AbsoluteY => {
-
-            }
-            AddressMode::IndirectX => {
-
-            }
-            AddressMode::IndirectY => {
-
-            }
+            AddressMode::ZeroPage => {}
+            AddressMode::ZeroPageX => {}
+            AddressMode::AbsoluteX => {}
+            AddressMode::AbsoluteY => {}
+            AddressMode::IndirectX => {}
+            AddressMode::IndirectY => {}
         }
-
     }
 
     pub fn ror(&mut self, addr_mode: AddressMode) {
@@ -123,6 +124,9 @@ impl CPU {
         let mut address: Option<u16> = None;
 
         match addr_mode {
+            AddressMode::Indirect => {
+                panic!("ror does not use indrect")
+            }
             AddressMode::Accumulator => {
                 value = self.a;
             }
@@ -191,6 +195,9 @@ impl CPU {
         let value: u8;
 
         match addr_mode {
+            AddressMode::Indirect => {
+                panic!("adc does not use indeirect")
+            }
             AddressMode::Accumulator => {
                 value = self.a;
             }
@@ -233,13 +240,12 @@ impl CPU {
     pub fn indirect(&mut self) -> u16 {
         self.pc += 1;
         let low = self.bus.read(self.pc) as u16;
-        if low == 0xFF{
+        if low == 0xFF {
             panic!("you need to impmenent the jmp bug")
         }
         self.pc += 1;
         let high = (self.bus.read(self.pc) as u16) << 8;
         high | low
-
     }
 
     pub fn indirect_x(&mut self) -> u16 {
