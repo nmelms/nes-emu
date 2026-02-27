@@ -38,10 +38,11 @@ impl CPU {
         let x = 0;
         let y = 0;
         // let sp = 0;
-        let low = bus.read(0xFFFC) as u16;
-        let high = bus.read(0xFFFD) as u16;
-    
-        let pc = high << 8| low;
+        // let low = bus.read(0xFFFC) as u16;
+        // let high = bus.read(0xFFFD) as u16;
+        // high << 8 | low;
+
+        let pc = 0xC000;
         let p = 0;
 
         Self {
@@ -55,7 +56,7 @@ impl CPU {
     }
 
     pub fn tick(&mut self) {
-        println!("tick");
+        println!("tick pc={}", self.pc);
         let opcode = self.bus.read(self.pc);
         self.pc += 1;
 
@@ -78,22 +79,49 @@ impl CPU {
             // JMP
             0x4C => self.jmp(AddressMode::Absolute),
             0x6C => self.jmp(AddressMode::Indirect),
+            // LDA
+            0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
             0xFA => self.noop(),
             _ => {
-                let mut print_addr = 0x6004;
-                while self.bus.read(print_addr) != 0 {
-                    print!("{}", self.bus.read(print_addr) as char);
-                    print_addr += 1;
-                }
-                panic!("Opcode not implemented: Got {}", opcode)
+                // let mut print_addr = 0x6004;
+                // while self.bus.read(print_addr) != 0 {
+                //     print!("{}", self.bus.read(print_addr) as char);
+                //     print_addr += 1;
+                // }
+                panic!("Opcode not implemented: Got {:02x}", opcode)
             }
         }
-        let mut print_addr = 0x6004;
-        while self.bus.read(print_addr) != 0 {
-            println!("{}", self.bus.read(print_addr));
-            print_addr += 1;
+        // let mut print_addr = 0x6004;
+        // while self.bus.read(print_addr) != 0 {
+        //     println!("{}", self.bus.read(print_addr));
+        //     print_addr += 1;
+        // }
+    }
+
+    pub fn lda(&mut self, addr_mode: AddressMode) {
+        let mut value: u8 = 0x00;
+        match addr_mode {
+            AddressMode::Indirect => {
+                panic!("lda does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!()
+            }
+            AddressMode::Immediate => {
+                value = self.am_immediate();
+            }
+            AddressMode::Absolute => {
+                panic!()
+            }
+            AddressMode::ZeroPage => {}
+            AddressMode::ZeroPageX => {}
+            AddressMode::AbsoluteX => {}
+            AddressMode::AbsoluteY => {}
+            AddressMode::IndirectX => {}
+            AddressMode::IndirectY => {}
         }
+        self.a = value;
     }
 
     pub fn noop(&mut self) {

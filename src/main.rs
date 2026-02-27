@@ -7,16 +7,17 @@ use bus::Bus;
 use cpu::CPU;
 
 fn main() {
-    let res = std::fs::read("official_only.nes");
+    let res = std::fs::read("nestest.nes");
     let rom = res.unwrap();
+    for i in 0..32 {
+        print!("{:02X} ", rom[i]);
+    }
     let bus = Bus::new(rom);
     let mut cpu = CPU::new(bus);
     let running = true;
 
     while running {
-        
         cpu.tick();
         println!("Value of a: {}", cpu.a)
-        
     }
 }

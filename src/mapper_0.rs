@@ -12,14 +12,15 @@ impl Mapper0 {
         Self {
             rom,
             is_nes_rom_128,
-            debug
+            debug,
         }
     }
 
     pub fn read(&mut self, addr: u16) -> u8 {
         if addr >= 0x6000 && addr <= 0x7FFF {
-            let offset = addr - 0x6000;
-            self.debug[offset as usize]
+            panic!("impelement read for range 0x6000 in mapper_0")
+            // let offset = addr - 0x6000;
+            // self.debug[offset as usize]
         } else if addr >= 0x8000 && addr <= 0xBFFF {
             let offset_addr = addr + 0x10 - 0x8000;
             self.rom[offset_addr as usize]
@@ -39,10 +40,14 @@ impl Mapper0 {
 
     pub fn write(&mut self, addr: u16, value: u8) {
         if addr >= 0x6000 && addr <= 0x7FFF {
-            let offset = addr - 0x6000;
-            self.debug[offset as usize] = value;
-        }else{
-        panic!(
+            panic!(
+                "You impelented write in mapper 0 only for the debug test statements, you got value: {}",
+                value
+            )
+            // let offset = addr - 0x6000;
+            // self.debug[offset as usize] = value;
+        } else {
+            panic!(
                 "You impelented write in mapper 0 only for the debug test statements, you got value: {}",
                 value
             )

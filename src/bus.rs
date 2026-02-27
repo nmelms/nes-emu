@@ -36,8 +36,11 @@ impl Bus {
             } else {
                 self.ram[addr as usize] = value;
             }
-        }else if addr >= 0x6000 && addr <= 0x7FFF{
-            self.mapper.write(addr, value);
+        } else if addr >= 0x6000 && addr <= 0x7FFF {
+            panic!(
+                "you have nto yet impemented write to the mapper go to bus and finish that now."
+            );
+            // self.mapper.write(addr, value);
         } else {
             panic!(
                 "you have nto yet impemented write to the mapper go to bus and finish that now."
