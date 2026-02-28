@@ -24,6 +24,7 @@ pub enum AddressMode {
     Absolute,
     ZeroPage,
     ZeroPageX,
+    ZeroPageY,
     AbsoluteX,
     AbsoluteY,
     IndirectX,
@@ -83,6 +84,12 @@ impl CPU {
             // JMP
             0x4C => self.jmp(AddressMode::Absolute),
             0x6C => self.jmp(AddressMode::Indirect),
+            // LDX
+            0xA2 => self.ldx(AddressMode::Immediate),
+            0xA6 => self.ldx(AddressMode::ZeroPage),
+            0xB6 => self.ldx(AddressMode::ZeroPageY),
+            0xAE => self.lda(AddressMode::Absolute),
+            0xBE => self.lda(AddressMode::AbsoluteY),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -104,6 +111,65 @@ impl CPU {
         // }
     }
 
+    pub fn ldx(&mut self, addr_mode: AddressMode) {
+        let value: u8;
+        match addr_mode {
+            AddressMode::Indirect => {
+                panic!("lda does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                value = self.am_immediate();
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                let addr = self.zero_page_y();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::AbsoluteX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("lad addrmode not implemented")
+            }
+        }
+        if value == 0x00{
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD;
+        }
+
+
+        let bit = value & 0x80;
+        if bit != 0 {
+            self.p = self.p | 0x80
+        }else{
+            self.p = self.p & 0x7F
+        }
+        
+             
+        self.x = value;
+    }
+
     pub fn lda(&mut self, addr_mode: AddressMode) {
         let mut value: u8 = 0x00;
         match addr_mode {
@@ -123,6 +189,9 @@ impl CPU {
                 panic!("lad addrmode not implemented")
             }
             AddressMode::ZeroPageX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
                 panic!("lad addrmode not implemented")
             }
             AddressMode::AbsoluteX => {
@@ -161,6 +230,9 @@ impl CPU {
             AddressMode::AbsoluteY => {}
             AddressMode::IndirectX => {}
             AddressMode::IndirectY => {}
+            AddressMode::ZeroPageY => {
+                panic!("jmp addrmode not implemented")
+            }
         }
     }
 
@@ -192,6 +264,9 @@ impl CPU {
                 let addr = self.zero_page_x();
                 address = Some(addr as u16);
                 value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("ror addrmode not implemented")
             }
             AddressMode::AbsoluteX => {
                 let addr = self.absolute_x();
@@ -261,6 +336,9 @@ impl CPU {
                 let addr = self.zero_page_x();
                 value = self.bus.read(addr as u16)
             }
+            AddressMode::ZeroPageY => {
+                panic!("adc addrmode not implemented")
+            }
             AddressMode::AbsoluteX => {
                 let addr = self.absolute_x();
                 value = self.bus.read(addr as u16)
@@ -313,7 +391,9 @@ impl CPU {
     }
 
     pub fn am_immediate(&mut self) -> u8 {
-        self.bus.read(self.pc)
+        let value = self.bus.read(self.pc);
+        self.pc += 1;
+        value
     }
 
     pub fn zero_page(&mut self) -> u8 {
@@ -324,6 +404,12 @@ impl CPU {
         let arg = self.bus.read(self.pc);
         // using wrapping add instead of % 256
         let addr = arg.wrapping_add(self.x);
+        addr
+    }
+    pub fn zero_page_y(&mut self) -> u8 {
+        let arg = self.bus.read(self.pc);
+        // using wrapping add instead of % 256
+        let addr = arg.wrapping_add(self.y);
         addr
     }
 
