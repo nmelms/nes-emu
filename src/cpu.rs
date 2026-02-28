@@ -90,6 +90,10 @@ impl CPU {
             0xB6 => self.ldx(AddressMode::ZeroPageY),
             0xAE => self.lda(AddressMode::Absolute),
             0xBE => self.lda(AddressMode::AbsoluteY),
+            // Store x
+            0x86 => self.stx(AddressMode::ZeroPage),
+            0x96 => self.stx(AddressMode::ZeroPageY),
+            0x8E => self.stx(AddressMode::Absolute),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -109,6 +113,50 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+
+    pub fn stx(&mut self, addr_mode: AddressMode){
+        let mem_addr: u8;
+        match addr_mode {
+            AddressMode::Indirect => {
+                panic!("stx does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("stx addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("stx addrmode not implemented")
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                mem_addr = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                mem_addr = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                panic!("stx addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                let addr = self.zero_page_y();
+                mem_addr = self.bus.read(addr as u16);
+            }
+            AddressMode::AbsoluteX => {
+                panic!("stx addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("stx addrmode not implemented");
+            }
+            AddressMode::IndirectX => {
+                panic!("stx addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("stx addrmode not implemented")
+            }
+        }
+
+        self.bus.write(mem_addr as u16, self.x);
     }
 
     pub fn ldx(&mut self, addr_mode: AddressMode) {
@@ -398,6 +446,7 @@ impl CPU {
 
     pub fn zero_page(&mut self) -> u8 {
         let addr = self.bus.read(self.pc);
+        self.pc += 1;
         addr
     }
     pub fn zero_page_x(&mut self) -> u8 {
