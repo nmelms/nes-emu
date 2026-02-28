@@ -10,7 +10,7 @@ pub struct CPU {
     x: u8,
     y: u8,
     // // stack pointer
-    // sp: u8,
+    sp: u8,
     // status
     p: u8,
     // program countergi
@@ -37,7 +37,7 @@ impl CPU {
         let a = 0;
         let x = 0;
         let y = 0;
-        // let sp = 0;
+        let sp = 0;
         // let low = bus.read(0xFFFC) as u16;
         // let high = bus.read(0xFFFD) as u16;
         // high << 8 | low;
@@ -52,12 +52,16 @@ impl CPU {
             x,
             y,
             bus,
+            sp,
         }
     }
 
     pub fn tick(&mut self) {
-        println!("tick pc={}", self.pc);
         let opcode = self.bus.read(self.pc);
+        println!(
+            "{:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+            self.pc, opcode, self.a, self.x, self.y, self.p, self.sp
+        );
         self.pc += 1;
 
         match opcode {
@@ -83,6 +87,7 @@ impl CPU {
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
             0xFA => self.noop(),
+            0x67 => self.noop(),
             _ => {
                 // let mut print_addr = 0x6004;
                 // while self.bus.read(print_addr) != 0 {
@@ -106,20 +111,32 @@ impl CPU {
                 panic!("lda does not use indrect")
             }
             AddressMode::Accumulator => {
-                panic!()
+                panic!("lad addrmode not implemented")
             }
             AddressMode::Immediate => {
                 value = self.am_immediate();
             }
             AddressMode::Absolute => {
-                panic!()
+                panic!("lad addrmode not implemented")
             }
-            AddressMode::ZeroPage => {}
-            AddressMode::ZeroPageX => {}
-            AddressMode::AbsoluteX => {}
-            AddressMode::AbsoluteY => {}
-            AddressMode::IndirectX => {}
-            AddressMode::IndirectY => {}
+            AddressMode::ZeroPage => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::ZeroPageX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::IndirectX => {
+                panic!("lad addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("lad addrmode not implemented")
+            }
         }
         self.a = value;
     }
@@ -335,10 +352,10 @@ impl CPU {
     pub fn am_absolute(&mut self) -> u16 {
         let first_byte: u16;
         let second_byte: u16;
-        first_byte = (self.bus.read(self.pc) as u16) << 8;
+        first_byte = self.bus.read(self.pc) as u16;
         self.pc += 1;
         second_byte = self.bus.read(self.pc) as u16;
-        first_byte | second_byte
+        second_byte << 8 | first_byte
     }
 
     // pub fn is_end_of_program(&self) -> bool {
