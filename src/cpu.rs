@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{mem, ops::Add};
 
 use crate::bus::Bus;
 
@@ -38,7 +38,7 @@ impl CPU {
         let a = 0;
         let x = 0;
         let y = 0;
-        let sp = 0;
+        let sp = 0xFD;
         // let low = bus.read(0xFFFC) as u16;
         // let high = bus.read(0xFFFD) as u16;
         // high << 8 | low;
@@ -94,6 +94,8 @@ impl CPU {
             0x86 => self.stx(AddressMode::ZeroPage),
             0x96 => self.stx(AddressMode::ZeroPageY),
             0x8E => self.stx(AddressMode::Absolute),
+            // Jump to subroutine
+            0x20 => self.jsr(AddressMode::Absolute),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -114,8 +116,56 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn jsr(&mut self, addr_mode: AddressMode) {
+        match addr_mode {
+            AddressMode::Indirect => {
+                panic!("jsr does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::Absolute => {
+                let mut sp = 0x0100 + self.sp as u16;
+                let memory = self.am_absolute();
+                let high_byte = (self.pc >> 8) as u8;
+                let low_byte = self.pc as u8;
 
-    pub fn stx(&mut self, addr_mode: AddressMode){
+                self.bus.write(sp, high_byte);
+                sp -= 0x01;
+                self.sp -= 0x01;
+                self.bus.write(sp, low_byte);
+                self.sp -= 0x01;
+
+                self.pc = memory;
+            }
+            AddressMode::ZeroPage => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::ZeroPageX => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("jsr addrmode not implemented");
+            }
+            AddressMode::IndirectX => {
+                panic!("jsr addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("jsr addrmode not implemented")
+            }
+        }
+    }
+
+    pub fn stx(&mut self, addr_mode: AddressMode) {
         let mem_addr: u8;
         match addr_mode {
             AddressMode::Indirect => {
@@ -200,21 +250,19 @@ impl CPU {
                 panic!("lad addrmode not implemented")
             }
         }
-        if value == 0x00{
+        if value == 0x00 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD;
         }
-
 
         let bit = value & 0x80;
         if bit != 0 {
             self.p = self.p | 0x80
-        }else{
+        } else {
             self.p = self.p & 0x7F
         }
-        
-             
+
         self.x = value;
     }
 
@@ -490,7 +538,9 @@ impl CPU {
         first_byte = self.bus.read(self.pc) as u16;
         self.pc += 1;
         second_byte = self.bus.read(self.pc) as u16;
-        second_byte << 8 | first_byte
+        let value = second_byte << 8 | first_byte;
+        self.pc += 1;
+        value
     }
 
     // pub fn is_end_of_program(&self) -> bool {
