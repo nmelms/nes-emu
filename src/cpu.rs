@@ -96,11 +96,15 @@ impl CPU {
             0x8E => self.stx(AddressMode::Absolute),
             // Jump to subroutine
             0x20 => self.jsr(AddressMode::Absolute),
+            // set Carry
+            0x38 => self.sec(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
+            0xEA => self.noop(),
             0xFA => self.noop(),
             0x67 => self.noop(),
+
             _ => {
                 // let mut print_addr = 0x6004;
                 // while self.bus.read(print_addr) != 0 {
@@ -115,6 +119,10 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+
+    pub fn sec(&mut self){
+        self.p = self.p & 0x01;
     }
     pub fn jsr(&mut self, addr_mode: AddressMode) {
         match addr_mode {
