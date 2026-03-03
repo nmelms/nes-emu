@@ -103,6 +103,8 @@ impl CPU {
             0xB0 => self.bcs(AddressMode::Relative),
             // Clear Carry
             0x18 => self.clc(),
+            // Branch if Carry Clear
+            0x90 => self.bcc(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -124,6 +126,51 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+
+    pub fn bcc(&mut self, addr_mode: AddressMode) {
+        match addr_mode {
+            AddressMode::Relative => {
+                let carry = self.p & 0x00;
+                if carry == 0x01{
+                    let offset = self.bus.read(self.pc) as i8;
+                    self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+                }
+            }
+            AddressMode::Indirect => {
+                panic!("bcs does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::Absolute => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPage => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPageX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("bcs addrmode not implemented");
+            }
+            AddressMode::IndirectX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("bcs addrmode not implemented")
+            }
+        }
     }
 
     pub fn clc(&mut self) {
