@@ -31,6 +31,7 @@ pub enum AddressMode {
     IndirectY,
     Accumulator,
     Indirect,
+    Relative,
 }
 
 impl CPU {
@@ -98,6 +99,10 @@ impl CPU {
             0x20 => self.jsr(AddressMode::Absolute),
             // set Carry
             0x38 => self.sec(),
+            // Branch if Carry Set
+            0xB0 => self.bcs(AddressMode::Relative),
+            // Clear Carry
+            0x18 => self.clc(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -121,11 +126,59 @@ impl CPU {
         // }
     }
 
-    pub fn sec(&mut self){
-        self.p = self.p & 0x01;
+    pub fn clc(&mut self) {
+        self.p = self.p & 0xFE;
+    }
+    pub fn bcs(&mut self, addr_mode: AddressMode) {
+        match addr_mode {
+            AddressMode::Relative => {
+                let offset = self.bus.read(self.pc) as i8;
+                self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+            }
+            AddressMode::Indirect => {
+                panic!("bcs does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::Absolute => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPage => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPageX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("bcs addrmode not implemented");
+            }
+            AddressMode::IndirectX => {
+                panic!("bcs addrmode not implemented")
+            }
+            AddressMode::IndirectY => {
+                panic!("bcs addrmode not implemented")
+            }
+        }
+    }
+
+    pub fn sec(&mut self) {
+        self.p = self.p | 0x01;
     }
     pub fn jsr(&mut self, addr_mode: AddressMode) {
         match addr_mode {
+            AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("jsr does not use indrect")
             }
@@ -176,6 +229,9 @@ impl CPU {
     pub fn stx(&mut self, addr_mode: AddressMode) {
         let mem_addr: u8;
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("stx does not use indrect")
             }
@@ -220,6 +276,9 @@ impl CPU {
     pub fn ldx(&mut self, addr_mode: AddressMode) {
         let value: u8;
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("lda does not use indrect")
             }
@@ -277,6 +336,9 @@ impl CPU {
     pub fn lda(&mut self, addr_mode: AddressMode) {
         let mut value: u8 = 0x00;
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("lda does not use indrect")
             }
@@ -320,6 +382,9 @@ impl CPU {
 
     pub fn jmp(&mut self, addr_mode: AddressMode) {
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => self.pc = self.indirect(),
             AddressMode::Accumulator => {}
             AddressMode::Immediate => {}
@@ -345,6 +410,9 @@ impl CPU {
         let mut address: Option<u16> = None;
 
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("ror does not use indrect")
             }
@@ -419,6 +487,9 @@ impl CPU {
         let value: u8;
 
         match addr_mode {
+                        AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
             AddressMode::Indirect => {
                 panic!("adc does not use indeirect")
             }
