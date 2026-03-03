@@ -16,6 +16,7 @@ pub struct CPU {
     // program countergi
     pc: u16,
     bus: Bus,
+    line: u8,
 }
 
 #[derive(PartialEq)]
@@ -46,6 +47,7 @@ impl CPU {
 
         let pc = 0xC000;
         let p = 0;
+        let line = 0;
 
         Self {
             a,
@@ -55,13 +57,15 @@ impl CPU {
             y,
             bus,
             sp,
+            line,
         }
     }
 
     pub fn tick(&mut self) {
         let opcode = self.bus.read(self.pc);
+        self.line += 1;
         println!(
-            "{:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+            "{} {:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.line,
             self.pc, opcode, self.a, self.x, self.y, self.p, self.sp
         );
         self.pc += 1;
@@ -104,7 +108,7 @@ impl CPU {
             // Clear Carry
             0x18 => self.clc(),
             // Branch if Carry Clear
-            0x90 => self.bcc(),
+            0x90 => self.bcc(AddressMode::Relative),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -131,10 +135,12 @@ impl CPU {
     pub fn bcc(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
-                let carry = self.p & 0x00;
-                if carry == 0x01{
+                let carry = self.p & 0x01;
+                if carry == 0x00{
                     let offset = self.bus.read(self.pc) as i8;
                     self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+                }else{
+                    self.pc += 1;
                 }
             }
             AddressMode::Indirect => {
@@ -144,7 +150,7 @@ impl CPU {
                 panic!("bcs addrmode not implemented")
             }
             AddressMode::Immediate => {
-                panic!("bcs addrmode not implemented")
+                panic!("bcs addrmod e not implemented")
             }
             AddressMode::Absolute => {
                 panic!("bcs addrmode not implemented")
@@ -179,8 +185,14 @@ impl CPU {
     pub fn bcs(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
-                let offset = self.bus.read(self.pc) as i8;
-                self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+                let carry = self.p & 0x01;
+                if carry == 0x01{
+                    let offset = self.bus.read(self.pc) as i8;
+                    self.pc = (self.pc as i32 + 1 + offset as i32) as u16;                    
+                }else{
+                    self.pc += 1;
+                }
+
             }
             AddressMode::Indirect => {
                 panic!("bcs does not use indrect")
