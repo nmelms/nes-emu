@@ -46,7 +46,7 @@ impl CPU {
         // high << 8 | low;
 
         let pc = 0xC000;
-        let p = 0;
+        let p = 0x24;
         let line = 0;
 
         Self {
@@ -65,8 +65,8 @@ impl CPU {
         let opcode = self.bus.read(self.pc);
         self.line += 1;
         println!(
-            "{} {:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.line,
-            self.pc, opcode, self.a, self.x, self.y, self.p, self.sp
+            "{} {:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+            self.line, self.pc, opcode, self.a, self.x, self.y, self.p, self.sp
         );
         self.pc += 1;
 
@@ -109,8 +109,11 @@ impl CPU {
             0x18 => self.clc(),
             // Branch if Carry Clear
             0x90 => self.bcc(AddressMode::Relative),
+            // Branch if Equal
+            0xF0 => self.beq(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
+
             // unoffical noop
             0xEA => self.noop(),
             0xFA => self.noop(),
@@ -122,7 +125,7 @@ impl CPU {
                 //     print!("{}", self.bus.read(print_addr) as char);
                 //     print_addr += 1;
                 // }
-                panic!("Opcode not implemented: Got {:02x}", opcode)
+                panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
         // let mut print_addr = 0x6004;
@@ -132,14 +135,25 @@ impl CPU {
         // }
     }
 
+    pub fn beq(&mut self) {
+        let zero_flag = self.p & 0x02;
+        if zero_flag == 0x02 {
+            let offset = self.bus.read(self.pc) as i8;
+            self.pc += 1;
+            self.pc = (self.pc as i32 + offset as i32) as u16;
+        } else {
+            self.pc += 1;
+        }
+    }
+
     pub fn bcc(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
                 let carry = self.p & 0x01;
-                if carry == 0x00{
+                if carry == 0x00 {
                     let offset = self.bus.read(self.pc) as i8;
                     self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
-                }else{
+                } else {
                     self.pc += 1;
                 }
             }
@@ -186,13 +200,12 @@ impl CPU {
         match addr_mode {
             AddressMode::Relative => {
                 let carry = self.p & 0x01;
-                if carry == 0x01{
+                if carry == 0x01 {
                     let offset = self.bus.read(self.pc) as i8;
-                    self.pc = (self.pc as i32 + 1 + offset as i32) as u16;                    
-                }else{
+                    self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+                } else {
                     self.pc += 1;
                 }
-
             }
             AddressMode::Indirect => {
                 panic!("bcs does not use indrect")
@@ -288,7 +301,7 @@ impl CPU {
     pub fn stx(&mut self, addr_mode: AddressMode) {
         let mem_addr: u8;
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => {
@@ -335,7 +348,7 @@ impl CPU {
     pub fn ldx(&mut self, addr_mode: AddressMode) {
         let value: u8;
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => {
@@ -395,7 +408,7 @@ impl CPU {
     pub fn lda(&mut self, addr_mode: AddressMode) {
         let mut value: u8 = 0x00;
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => {
@@ -433,6 +446,14 @@ impl CPU {
             }
         }
         self.a = value;
+        if value == 0 {
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD;
+        }
+
+        self.p = self.p & 0x7F;
+        self.p = self.p | (value & 0x80)
     }
 
     pub fn noop(&mut self) {
@@ -441,7 +462,7 @@ impl CPU {
 
     pub fn jmp(&mut self, addr_mode: AddressMode) {
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => self.pc = self.indirect(),
@@ -469,7 +490,7 @@ impl CPU {
         let mut address: Option<u16> = None;
 
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => {
@@ -546,7 +567,7 @@ impl CPU {
         let value: u8;
 
         match addr_mode {
-                        AddressMode::Relative => {
+            AddressMode::Relative => {
                 panic!("does not use indrect")
             }
             AddressMode::Indirect => {
