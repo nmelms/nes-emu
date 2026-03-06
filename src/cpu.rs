@@ -111,6 +111,8 @@ impl CPU {
             0x90 => self.bcc(AddressMode::Relative),
             // Branch if Equal
             0xF0 => self.beq(),
+            // branch if not equal
+            0xD0 => self.bne(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -135,6 +137,16 @@ impl CPU {
         // }
     }
 
+    pub fn bne(&mut self){
+        let zero_flag = self.p & 0x02;
+        if zero_flag == 0{
+            let offset: i8 = self.bus.read(self.pc) as i8;
+            self.pc += 1;
+            self.pc = (self.pc as i32 + offset as i32) as u16
+        }else{
+            self.pc += 1;
+        }
+    }
     pub fn beq(&mut self) {
         let zero_flag = self.p & 0x02;
         if zero_flag == 0x02 {
