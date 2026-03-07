@@ -129,7 +129,9 @@ impl CPU {
             // Branch if overflow clear
             0x50 => self.bvc(),
             // branch if Plus
-            0xD0 => self. bpl(),
+            0x10 => self. bpl(),
+            // return to subroutine
+            0x60 => self.rts(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -153,6 +155,17 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn rts(&mut self){
+        self.sp += 1;        
+        let low = self.bus.read(self.sp as u16 + 0x0100) as u16;
+        self.sp += 1;
+        let high = (self.bus.read(self.sp as u16 + 0x0100) as u16) << 8;
+
+        let addr = high | low;
+        self.pc = addr as u16;
+
+    }
+
     pub fn bpl(&mut self){
         let negative = self.p & 0x80;
 
