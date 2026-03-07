@@ -128,6 +128,8 @@ impl CPU {
             0x70 => self.bvs(),
             // Branch if overflow clear
             0x50 => self.bvc(),
+            // branch if Plus
+            0xD0 => self. bpl(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -150,6 +152,17 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn bpl(&mut self){
+        let negative = self.p & 0x80;
+
+        if negative == 0{
+            let offset = self.bus.read(self.pc) as i8;
+            self.pc += 1;
+            self.pc = (self.pc as u32 + offset as u32) as u16;
+        }else{
+            self.pc += 1;
+        }
     }
     pub fn bvc(&mut self){
         let overflow = self.p & 0x40;
