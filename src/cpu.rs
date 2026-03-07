@@ -113,6 +113,14 @@ impl CPU {
             0xF0 => self.beq(),
             // branch if not equal
             0xD0 => self.bne(),
+            // Store A
+            0x85 => self.sta(AddressMode::ZeroPage),
+            0x95 => self.sta(AddressMode::ZeroPageX),
+            0x8D => self.sta(AddressMode::Absolute),
+            0x9D => self.sta(AddressMode::AbsoluteX),
+            0x99 => self.sta(AddressMode::AbsoluteY),
+            0x81 => self.sta(AddressMode::IndirectX),
+            0x91 => self.sta(AddressMode::IndirectY),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -135,6 +143,55 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+
+    pub fn sta(&mut self, addr_mode: AddressMode){
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("sta does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("sta does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("sta addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("sta addrmod e not implemented")
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute() as u16;
+                self.bus.write(addr, self.a);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page() as u16;
+                self.bus.write(addr, self.a);
+
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x() as u16;
+                self.bus.write(addr, self.a);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("sta addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x() as u16;
+                self.bus.write(addr, self.a);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y() as u16;
+                self.bus.write(addr, self.a);
+            }
+            AddressMode::IndirectX => {
+                let addr = self.indirect_x() as u16;
+                self.bus.write(addr, self.a);
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y() as u16;
+                self.bus.write(addr, self.a);
+            }
+        }
     }
 
     pub fn bne(&mut self){
