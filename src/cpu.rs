@@ -93,8 +93,8 @@ impl CPU {
             0xA2 => self.ldx(AddressMode::Immediate),
             0xA6 => self.ldx(AddressMode::ZeroPage),
             0xB6 => self.ldx(AddressMode::ZeroPageY),
-            0xAE => self.lda(AddressMode::Absolute),
-            0xBE => self.lda(AddressMode::AbsoluteY),
+            0xAE => self.ldx(AddressMode::Absolute),
+            0xBE => self.ldx(AddressMode::AbsoluteY),
             // Store x
             0x86 => self.stx(AddressMode::ZeroPage),
             0x96 => self.stx(AddressMode::ZeroPageY),
@@ -126,6 +126,8 @@ impl CPU {
             0x2C => self.bit(AddressMode::Absolute),
             // Branch if Overflow Set
             0x70 => self.bvs(),
+            // Branch if overflow clear
+            0x50 => self.bvc(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -148,6 +150,17 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn bvc(&mut self){
+        let overflow = self.p & 0x40;
+
+        if overflow == 0{
+            let offset = self.bus.read(self.pc) as i8;
+            self.pc += 1;
+            self.pc = (self.pc as u32 + offset as u32) as u16;
+        }else{
+            self.pc += 1;
+        }
     }
     pub fn bvs(&mut self){
         let overflow = self.p & 0x40;
