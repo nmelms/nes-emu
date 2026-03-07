@@ -121,6 +121,9 @@ impl CPU {
             0x99 => self.sta(AddressMode::AbsoluteY),
             0x81 => self.sta(AddressMode::IndirectX),
             0x91 => self.sta(AddressMode::IndirectY),
+            // Bit Test
+            0x24 => self.bit(AddressMode::ZeroPage),
+            0x2C => self.bit(AddressMode::Absolute),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
 
@@ -143,6 +146,75 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn bit(&mut self, addr_mode: AddressMode){
+        let value;
+        let mask;
+         match addr_mode {
+            AddressMode::Relative => {
+                panic!("bit does not use addrmode")
+            }
+            AddressMode::Indirect => {
+                panic!("sta does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("sta addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                panic!("sta addrmod e not implemented")
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr as u16);
+                mask = self.a & value;
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+                mask = self.a & value;
+            }
+            AddressMode::ZeroPageX => {
+                panic!("bit does not use addrmode")
+            }
+            AddressMode::ZeroPageY => {
+                panic!("sta addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("bit does not use addrmode")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("bit does not use addrmode")
+            }
+            AddressMode::IndirectX => {
+                panic!("bit does not use addrmode")
+            }
+            AddressMode::IndirectY => {
+                panic!("bit does not use addrmode")
+            }
+        }
+
+        // set zero flag
+        if mask == 0{
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD
+        }
+
+        // Overflow
+        let overflow = value & 0x40;
+        if overflow == 0{
+            self.p = self.p & 0xBF;
+        }else{
+            self.p = self.p | 0x40
+        }
+
+        // negative
+        let negative = value & 0x80;
+        if negative == 0{
+            self.p = self.p & 0x7F;
+        }else{
+            self.p = self.p | 0x80;                 
+        }
     }
 
     pub fn sta(&mut self, addr_mode: AddressMode){
