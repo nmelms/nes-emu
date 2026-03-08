@@ -140,7 +140,16 @@ impl CPU {
             0x08 => self.php(),
             // Pull A
             0x68 => self.pla(),
-            
+            // Bitwise And
+            0x29 => self.and(AddressMode::Immediate),
+            0x25 => self. and(AddressMode::ZeroPage),
+            0x35 => self.and(AddressMode::ZeroPageX),
+            0x2D => self.and(AddressMode::Absolute),
+            0x3D => self.and(AddressMode::AbsoluteX),
+            0x39 => self.and(AddressMode::AbsoluteY),
+            0x21 => self.and(AddressMode::IndirectX),
+            0x31 => self.and(AddressMode::IndirectY),
+
 
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
@@ -163,6 +172,74 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn and(&mut self, addr_mode: AddressMode){
+        let value: u8;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("and does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("and does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("and addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                let addr = self.am_immediate();
+                value = self.bus.read(addr as u16);
+
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("and addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::IndirectX => {
+               let addr = self.indirect_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                value = self.bus.read(addr as u16);
+            }
+        }
+
+        self.a = self.a & value;
+
+         // set zero flag
+        if self.a == 0{
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.a & 0x80;
+
+        if is_negative == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
     }
     pub fn pla(&mut self){
         self.sp += 1;
