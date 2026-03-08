@@ -162,6 +162,8 @@ impl CPU {
             0xD8 => self.cld(),
             // Push A
             0x48 => self.pha(),
+            // Pull processor status
+            0x28 => self.plp(),
 
 
             // LDA
@@ -185,6 +187,11 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn plp(&mut self){
+        self.sp += 1;
+        let p_flag_value = self.bus.read(0x0100 + self.sp as u16);
+        self.p = p_flag_value & 0xEF
     }
     pub fn pha(&mut self){
             let addr = self.sp as u16 + 0x0100;
