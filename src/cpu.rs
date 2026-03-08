@@ -149,6 +149,15 @@ impl CPU {
             0x39 => self.and(AddressMode::AbsoluteY),
             0x21 => self.and(AddressMode::IndirectX),
             0x31 => self.and(AddressMode::IndirectY),
+            // Compare A
+            0xC9 => self.cmp(AddressMode::Immediate),
+            0xC5 => self.cmp(AddressMode::ZeroPage),
+            0xD5 => self.cmp(AddressMode::ZeroPageX),
+            0xCD => self.cmp(AddressMode::Absolute),
+            0xDD => self.cmp(AddressMode::AbsoluteX),
+            0xD9 => self.cmp(AddressMode::AbsoluteY),
+            0xC1 => self.cmp(AddressMode::IndirectX),
+            0xD1 => self.cmp(AddressMode::IndirectY),
 
 
             // LDA
@@ -173,21 +182,20 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
-    pub fn and(&mut self, addr_mode: AddressMode){
+    pub fn cmp(&mut self, addr_mode: AddressMode){
         let value: u8;
         match addr_mode {
             AddressMode::Relative => {
-                panic!("and does not use indrect")
+                panic!("cmp does not use indrect")
             }
             AddressMode::Indirect => {
-                panic!("and does not use indrect")
+                panic!("cmp does not use indrect")
             }
             AddressMode::Accumulator => {
-                panic!("and addrmode not implemented")
+                panic!("cmp addrmode not implemented")
             }
             AddressMode::Immediate => {
-                let addr = self.am_immediate();
-                value = self.bus.read(addr as u16);
+                value = self.am_immediate();
 
             }
             AddressMode::Absolute => {
@@ -204,7 +212,80 @@ impl CPU {
                 value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPageY => {
+                panic!("cmp addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::IndirectX => {
+               let addr = self.indirect_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                value = self.bus.read(addr as u16);
+            }
+        }
+
+        let compare = self.a - value;
+        // Carry flag
+        if self.a >= value{
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE;
+        }
+
+         // set zero flag
+        if compare == 0{
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = compare & 0x80;
+        if is_negative == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
+    }
+
+    pub fn and(&mut self, addr_mode: AddressMode){
+        let value: u8;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("and does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("and does not use indrect")
+            }
+            AddressMode::Accumulator => {
                 panic!("and addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                value = self.am_immediate();
+
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("and addrmode not implemented")
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::AbsoluteX => {
                 let addr = self.absolute_x();
