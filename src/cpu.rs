@@ -160,6 +160,8 @@ impl CPU {
             0xD1 => self.cmp(AddressMode::IndirectY),
             // Clear Dcimal
             0xD8 => self.cld(),
+            // Push A
+            0x48 => self.pha(),
 
 
             // LDA
@@ -183,6 +185,11 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn pha(&mut self){
+            let addr = self.sp as u16 + 0x0100;
+            self.bus.write(addr, self.a);
+            self.sp -= 1;
     }
     pub fn cld(&mut self){
        self.p = self.p & 0xF7;
