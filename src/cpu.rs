@@ -142,7 +142,7 @@ impl CPU {
             0x68 => self.pla(),
             // Bitwise And
             0x29 => self.and(AddressMode::Immediate),
-            0x25 => self. and(AddressMode::ZeroPage),
+            0x25 => self.and(AddressMode::ZeroPage),
             0x35 => self.and(AddressMode::ZeroPageX),
             0x2D => self.and(AddressMode::Absolute),
             0x3D => self.and(AddressMode::AbsoluteX),
@@ -158,6 +158,8 @@ impl CPU {
             0xD9 => self.cmp(AddressMode::AbsoluteY),
             0xC1 => self.cmp(AddressMode::IndirectX),
             0xD1 => self.cmp(AddressMode::IndirectY),
+            // Clear Dcimal
+            0xD8 => self.cld(),
 
 
             // LDA
@@ -181,6 +183,9 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn cld(&mut self){
+       self.p = self.p & 0xF7;
     }
     pub fn cmp(&mut self, addr_mode: AddressMode){
         let value: u8;
