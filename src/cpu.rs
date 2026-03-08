@@ -136,6 +136,12 @@ impl CPU {
             0x78 => self.sei(),
             // Set Decimal
             0xF8 => self.sed(),
+            // Push Processor Status
+            0x08 => self.php(),
+            // Pull A
+            0x68 => self.pla(),
+            
+
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -157,6 +163,34 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn pla(&mut self){
+        self.sp += 1;
+        let addr = 0x0100 + self.sp as u16;
+        self.a = self.bus.read(addr);
+        
+        // set zero flag
+        if self.a == 0{
+            self.p = self.p | 0x02;
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.a & 0x80;
+
+        if is_negative == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
+
+    }
+
+    pub fn php(&mut self){
+        let sp_addr = 0x0100 + self.sp as u16;
+        let status_flag = self.p | 0x10;
+        self.bus.write(sp_addr, status_flag);
+        self.sp -= 1;
     }
     pub fn sed(&mut self){
         self.p = self.p | 0x08;
