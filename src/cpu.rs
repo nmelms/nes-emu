@@ -134,6 +134,8 @@ impl CPU {
             0x60 => self.rts(),
             // Set interrupt Disable
             0x78 => self.sei(),
+            // Set Decimal
+            0xF8 => self.sed(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -156,10 +158,13 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn sed(&mut self){
+        self.p = self.p | 0x08;
+    }
     pub fn sei(&mut self){
         self.p = self.p | 0x04;
     }
-    
+
     pub fn rts(&mut self){
         self.sp += 1;        
         let low = self.bus.read(self.sp as u16 + 0x0100) as u16;
