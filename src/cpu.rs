@@ -129,12 +129,13 @@ impl CPU {
             // Branch if overflow clear
             0x50 => self.bvc(),
             // branch if Plus
-            0x10 => self. bpl(),
+            0x10 => self.bpl(),
             // return to subroutine
             0x60 => self.rts(),
+            // Set interrupt Disable
+            0x78 => self.sei(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
-
             // unoffical noop
             0xEA => self.noop(),
             0xFA => self.noop(),
@@ -155,6 +156,10 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn sei(&mut self){
+        self.p = self.p | 0x04;
+    }
+    
     pub fn rts(&mut self){
         self.sp += 1;        
         let low = self.bus.read(self.sp as u16 + 0x0100) as u16;
