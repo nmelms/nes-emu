@@ -190,8 +190,8 @@ impl CPU {
     }
     pub fn plp(&mut self){
         self.sp += 1;
-        let p_flag_value = self.bus.read(0x0100 + self.sp as u16);
-        self.p = p_flag_value & 0xEF
+        let p_flag_value = self.bus.read(0x0100 + (self.sp as u16));
+        self.p = (p_flag_value & 0xEF) | 0x20;
     }
     pub fn pha(&mut self){
             let addr = self.sp as u16 + 0x0100;
