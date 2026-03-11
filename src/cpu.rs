@@ -166,7 +166,15 @@ impl CPU {
             0x28 => self.plp(),
             // Branch if minus
             0x30 => self.bmi(),
-
+            // Bitwise  OR
+            0x09 => self.or(AddressMode::Immediate),
+            0x05 => self.or(AddressMode::ZeroPage),
+            0x15 => self.or(AddressMode::ZeroPageX),
+            0x0D => self.or(AddressMode::Absolute),
+            0x1D => self.or(AddressMode::AbsoluteX),
+            0x19 => self.or(AddressMode::AbsoluteY),
+            0x01 => self.or(AddressMode::IndirectX),
+            0x11 => self.or(AddressMode::IndirectY),
 
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
@@ -190,31 +198,96 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
-    pub fn bmi(&mut self){
+    pub fn or(&mut self, addr_mode: AddressMode) {
+        let mut value = 0x00;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("or does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("or does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("or addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                let addr = self.am_immediate();
+                value = addr;
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("or addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectX => {
+                let addr = self.indirect_x();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                value = self.bus.read(addr);
+            }
+        }
+
+        self.a = self.a | value;
+
+        // set zero flag
+        if self.a == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.a & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+    }
+    pub fn bmi(&mut self) {
         let negative_flag = self.p & 0x80;
-        if negative_flag != 0{
+        if negative_flag != 0 {
             let offset = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as u32 + offset as u32) as u16;
-        }else{
+        } else {
             self.pc += 1;
         }
-        
     }
-    pub fn plp(&mut self){
+    pub fn plp(&mut self) {
         self.sp += 1;
         let p_flag_value = self.bus.read(0x0100 + (self.sp as u16));
         self.p = (p_flag_value & 0xEF) | 0x20;
     }
-    pub fn pha(&mut self){
-            let addr = self.sp as u16 + 0x0100;
-            self.bus.write(addr, self.a);
-            self.sp -= 1;
+    pub fn pha(&mut self) {
+        let addr = self.sp as u16 + 0x0100;
+        self.bus.write(addr, self.a);
+        self.sp -= 1;
     }
-    pub fn cld(&mut self){
-       self.p = self.p & 0xF7;
+    pub fn cld(&mut self) {
+        self.p = self.p & 0xF7;
     }
-    pub fn cmp(&mut self, addr_mode: AddressMode){
+    pub fn cmp(&mut self, addr_mode: AddressMode) {
         let value: u8;
         match addr_mode {
             AddressMode::Relative => {
@@ -228,7 +301,6 @@ impl CPU {
             }
             AddressMode::Immediate => {
                 value = self.am_immediate();
-
             }
             AddressMode::Absolute => {
                 let addr = self.am_absolute();
@@ -237,7 +309,6 @@ impl CPU {
             AddressMode::ZeroPage => {
                 let addr = self.zero_page();
                 value = self.bus.read(addr as u16);
-
             }
             AddressMode::ZeroPageX => {
                 let addr = self.zero_page_x();
@@ -255,7 +326,7 @@ impl CPU {
                 value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectX => {
-               let addr = self.indirect_x();
+                let addr = self.indirect_x();
                 value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectY => {
@@ -266,28 +337,28 @@ impl CPU {
 
         let compare = self.a - value;
         // Carry flag
-        if self.a >= value{
+        if self.a >= value {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE;
         }
 
-         // set zero flag
-        if compare == 0{
+        // set zero flag
+        if compare == 0 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // negative
         let is_negative = compare & 0x80;
-        if is_negative == 0x80{
+        if is_negative == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
     }
 
-    pub fn and(&mut self, addr_mode: AddressMode){
+    pub fn and(&mut self, addr_mode: AddressMode) {
         let value: u8;
         match addr_mode {
             AddressMode::Relative => {
@@ -301,12 +372,10 @@ impl CPU {
             }
             AddressMode::Immediate => {
                 value = self.am_immediate();
-
             }
             AddressMode::ZeroPage => {
                 let addr = self.zero_page();
                 value = self.bus.read(addr as u16);
-
             }
             AddressMode::ZeroPageX => {
                 let addr = self.zero_page_x();
@@ -328,7 +397,7 @@ impl CPU {
                 value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectX => {
-               let addr = self.indirect_x();
+                let addr = self.indirect_x();
                 value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectY => {
@@ -339,104 +408,102 @@ impl CPU {
 
         self.a = self.a & value;
 
-         // set zero flag
-        if self.a == 0{
+        // set zero flag
+        if self.a == 0 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // negative
         let is_negative = self.a & 0x80;
 
-        if is_negative == 0x80{
+        if is_negative == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
     }
-    pub fn pla(&mut self){
+    pub fn pla(&mut self) {
         self.sp += 1;
         let addr = 0x0100 + self.sp as u16;
         self.a = self.bus.read(addr);
-        
+
         // set zero flag
-        if self.a == 0{
+        if self.a == 0 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // negative
         let is_negative = self.a & 0x80;
 
-        if is_negative == 0x80{
+        if is_negative == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
-
     }
 
-    pub fn php(&mut self){
+    pub fn php(&mut self) {
         let sp_addr = 0x0100 + self.sp as u16;
         let status_flag = self.p | 0x10;
         self.bus.write(sp_addr, status_flag);
         self.sp -= 1;
     }
-    pub fn sed(&mut self){
+    pub fn sed(&mut self) {
         self.p = self.p | 0x08;
     }
-    pub fn sei(&mut self){
+    pub fn sei(&mut self) {
         self.p = self.p | 0x04;
     }
 
-    pub fn rts(&mut self){
-        self.sp += 1;        
+    pub fn rts(&mut self) {
+        self.sp += 1;
         let low = self.bus.read(self.sp as u16 + 0x0100) as u16;
         self.sp += 1;
         let high = (self.bus.read(self.sp as u16 + 0x0100) as u16) << 8;
 
         let addr = high | low;
         self.pc = addr as u16;
-
     }
 
-    pub fn bpl(&mut self){
+    pub fn bpl(&mut self) {
         let negative = self.p & 0x80;
 
-        if negative == 0{
+        if negative == 0 {
             let offset = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as u32 + offset as u32) as u16;
-        }else{
+        } else {
             self.pc += 1;
         }
     }
-    pub fn bvc(&mut self){
+    pub fn bvc(&mut self) {
         let overflow = self.p & 0x40;
 
-        if overflow == 0{
+        if overflow == 0 {
             let offset = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as u32 + offset as u32) as u16;
-        }else{
+        } else {
             self.pc += 1;
         }
     }
-    pub fn bvs(&mut self){
+    pub fn bvs(&mut self) {
         let overflow = self.p & 0x40;
 
-        if overflow != 0{
+        if overflow != 0 {
             let offset = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as u32 + offset as u32) as u16;
-        }else{
+        } else {
             self.pc += 1;
         }
     }
-    pub fn bit(&mut self, addr_mode: AddressMode){
+    pub fn bit(&mut self, addr_mode: AddressMode) {
         let value;
         let mask;
-         match addr_mode {
+        match addr_mode {
             AddressMode::Relative => {
                 panic!("bit does not use addrmode")
             }
@@ -480,30 +547,30 @@ impl CPU {
         }
 
         // set zero flag
-        if mask == 0{
+        if mask == 0 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
 
         // Overflow
         let overflow = value & 0x40;
-        if overflow == 0{
+        if overflow == 0 {
             self.p = self.p & 0xBF;
-        }else{
+        } else {
             self.p = self.p | 0x40
         }
 
         // negative
         let negative = value & 0x80;
-        if negative == 0{
+        if negative == 0 {
             self.p = self.p & 0x7F;
-        }else{
-            self.p = self.p | 0x80;                 
+        } else {
+            self.p = self.p | 0x80;
         }
     }
 
-    pub fn sta(&mut self, addr_mode: AddressMode){
+    pub fn sta(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
                 panic!("sta does not use indrect")
@@ -524,7 +591,6 @@ impl CPU {
             AddressMode::ZeroPage => {
                 let addr = self.zero_page() as u16;
                 self.bus.write(addr, self.a);
-
             }
             AddressMode::ZeroPageX => {
                 let addr = self.zero_page_x() as u16;
@@ -552,13 +618,13 @@ impl CPU {
         }
     }
 
-    pub fn bne(&mut self){
+    pub fn bne(&mut self) {
         let zero_flag = self.p & 0x02;
-        if zero_flag == 0{
+        if zero_flag == 0 {
             let offset: i8 = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as i32 + offset as i32) as u16
-        }else{
+        } else {
             self.pc += 1;
         }
     }
@@ -875,7 +941,7 @@ impl CPU {
         self.a = value;
         if value == 0 {
             self.p = self.p | 0x02;
-        }else{
+        } else {
             self.p = self.p & 0xFD;
         }
 
