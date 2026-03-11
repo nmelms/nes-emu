@@ -164,6 +164,8 @@ impl CPU {
             0x48 => self.pha(),
             // Pull processor status
             0x28 => self.plp(),
+            // Branch if minus
+            0x30 => self.bmi(),
 
 
             // LDA
@@ -187,6 +189,17 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn bmi(&mut self){
+        let negative_flag = self.p & 0x80;
+        if negative_flag != 0{
+            let offset = self.bus.read(self.pc) as i8;
+            self.pc += 1;
+            self.pc = (self.pc as u32 + offset as u32) as u16;
+        }else{
+            self.pc += 1;
+        }
+        
     }
     pub fn plp(&mut self){
         self.sp += 1;
