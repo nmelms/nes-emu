@@ -16,7 +16,7 @@ pub struct CPU {
     // program countergi
     pc: u16,
     bus: Bus,
-    line: u8,
+    line: u16,
 }
 
 #[derive(PartialEq)]
@@ -177,6 +177,15 @@ impl CPU {
             0x11 => self.or(AddressMode::IndirectY),
             // clear overflow
             0xB8 => self.clv(),
+            // Bitwise Exclusive OR
+            0x49 => self.eor(AddressMode::Immediate),
+            0x45 => self.eor(AddressMode::ZeroPage),
+            0x55 => self.eor(AddressMode::ZeroPageX),
+            0x4D => self.eor(AddressMode::Absolute),
+            0x5D => self.eor(AddressMode::AbsoluteX),
+            0x59 => self.eor(AddressMode::AbsoluteY),
+            0x41 => self.eor(AddressMode::IndirectX),
+            0x51 => self.eor(AddressMode::IndirectY),
 
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
@@ -200,7 +209,73 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
-    pub fn clv(&mut self){
+    pub fn eor(&mut self, addr_mode: AddressMode) {
+        let mut value = 0x00;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("or does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("or does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("or addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                let addr = self.am_immediate();
+                value = addr;
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("or addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectX => {
+                let addr = self.indirect_x();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                value = self.bus.read(addr);
+            }
+        }
+
+        self.a = self.a ^ value;
+
+        // set zero flag
+        if self.a == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.a & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+    }
+    pub fn clv(&mut self) {
         self.p = self.p & 0xBF;
     }
     pub fn or(&mut self, addr_mode: AddressMode) {
@@ -340,7 +415,7 @@ impl CPU {
             }
         }
 
-        let compare = self.a - value;
+        let compare = self.a as i16 - value as i16;
         // Carry flag
         if self.a >= value {
             self.p = self.p | 0x01;
@@ -700,7 +775,7 @@ impl CPU {
                 let carry = self.p & 0x01;
                 if carry == 0x01 {
                     let offset = self.bus.read(self.pc) as i8;
-                    self.pc = (self.pc as i32 + 1 + offset as i32) as u16;
+                    self.pc = (self.pc as u32 + 1 + offset as u32) as u16;
                 } else {
                     self.pc += 1;
                 }
@@ -1110,7 +1185,33 @@ impl CPU {
             }
         }
 
-        self.a = self.a + value + (self.p & 0x01);
+
+        let res = self.a as u16 + value as u16 + (self.p & 0x01) as u16;
+
+        // set carry flag
+        if res as u16 > 0xFF{
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE
+        }
+        if res == 0{
+            self.p = self.p | 0x02
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // set overflow
+        if (res ^ self.a as u16) & (res ^ value as u16) & 0x80 != 0{
+            self.p = self.p | 0x40;
+        }else{
+            self.p = self.p & 0xBF
+        }
+        // set negative
+        if res & 0x80 == 0x80{
+            self.p = self.p | 0x80
+        }else{
+            self.p = self.p & 0x7F
+        }
+        self.a = res as u8;
     }
 
     pub fn indirect(&mut self) -> u16 {
