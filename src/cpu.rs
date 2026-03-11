@@ -175,6 +175,8 @@ impl CPU {
             0x19 => self.or(AddressMode::AbsoluteY),
             0x01 => self.or(AddressMode::IndirectX),
             0x11 => self.or(AddressMode::IndirectY),
+            // clear overflow
+            0xB8 => self.clv(),
 
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
@@ -197,6 +199,9 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn clv(&mut self){
+        self.p = self.p & 0xBF;
     }
     pub fn or(&mut self, addr_mode: AddressMode) {
         let mut value = 0x00;
