@@ -1194,7 +1194,8 @@ impl CPU {
         }else{
             self.p = self.p & 0xFE
         }
-        if res == 0{
+        // set zero flag
+        if res as u8 == 0{
             self.p = self.p | 0x02
         }else{
             self.p = self.p & 0xFD
