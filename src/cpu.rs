@@ -211,6 +211,8 @@ impl CPU {
             0xF1 => self.sbc(AddressMode::IndirectY),
             // Increment Y
             0xC8 => self.iny(),
+            // Increment X
+            0xE8 => self.inx(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -232,6 +234,24 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn inx(&mut self){
+        self.x = self.x + 1;
+
+        // set zero flag
+        if self.x == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.x & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
     }
     pub fn iny(&mut self){
         self.y = self.y + 1;
