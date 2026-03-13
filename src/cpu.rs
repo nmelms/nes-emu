@@ -192,6 +192,11 @@ impl CPU {
             0xB4 => self.ldy(AddressMode::ZeroPageX),
             0xAC => self.ldy(AddressMode::Absolute),
             0xBC => self.ldy(AddressMode::AbsoluteX),
+            // Compare Y
+            0xC0 => self.cpy(AddressMode::Immediate),
+            0xC4 => self.cpy(AddressMode::ZeroPage),
+            0xCC => self.cpy(AddressMode::Absolute),
+
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -213,6 +218,73 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn cpy(&mut self, addr_mode: AddressMode) {
+        let mut value = 0x00;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                let addr = self.am_immediate();
+                value = addr;
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::ZeroPageY => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::IndirectX => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::IndirectY => {
+                panic!("ldy does not use indrect")
+            }
+        }
+
+        let res = self.y as i32 - value as i32;
+
+        if self.y >= value {
+            self.p = self.p | 0x01;
+        } else {
+            self.p = self.p & 0xFE;
+        }
+
+        // set zero flag
+        if self.y == value {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = res as u16 & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
     }
     pub fn ldy(&mut self, addr_mode: AddressMode) {
         let mut value = 0x00;
