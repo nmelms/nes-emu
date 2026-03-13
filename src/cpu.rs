@@ -186,7 +186,12 @@ impl CPU {
             0x59 => self.eor(AddressMode::AbsoluteY),
             0x41 => self.eor(AddressMode::IndirectX),
             0x51 => self.eor(AddressMode::IndirectY),
-
+            // Load Y
+            0xA0 => self.ldy(AddressMode::Immediate),
+            0xA4 => self.ldy(AddressMode::ZeroPage),
+            0xB4 => self.ldy(AddressMode::ZeroPageX),
+            0xAC => self.ldy(AddressMode::Absolute),
+            0xBC => self.ldy(AddressMode::AbsoluteX),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -208,6 +213,70 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn ldy(&mut self, addr_mode: AddressMode) {
+        let mut value = 0x00;
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::Immediate => {
+                let addr = self.am_immediate();
+                value = addr;
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr);
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
+            }
+            AddressMode::ZeroPageY => {
+                panic!("ldy addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr);
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr);
+            }
+            AddressMode::IndirectX => {
+                panic!("ldy does not use indrect")
+            }
+            AddressMode::IndirectY => {
+                panic!("ldy does not use indrect")
+            }
+        }
+
+        self.y = value;
+
+        // set zero flag
+        if self.y == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.y & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
     }
     pub fn eor(&mut self, addr_mode: AddressMode) {
         let mut value = 0x00;
