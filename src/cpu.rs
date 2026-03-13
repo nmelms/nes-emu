@@ -200,7 +200,15 @@ impl CPU {
             0xE0 => self.cpx(AddressMode::Immediate),
             0xE4 => self.cpx(AddressMode::ZeroPage),
             0xEC => self.cpx(AddressMode::Absolute),
-
+            // Subtract with Carry
+            0xE9 => self.sbc(AddressMode::Immediate),
+            0xE5 => self.sbc(AddressMode::ZeroPage),
+            0xF5 => self.sbc(AddressMode::ZeroPageX),
+            0xED => self.sbc(AddressMode::Absolute),
+            0xFD => self.sbc(AddressMode::AbsoluteX),
+            0xF9 => self.sbc(AddressMode::AbsoluteY),
+            0xE1 => self.sbc(AddressMode::IndirectX),
+            0xF1 => self.sbc(AddressMode::IndirectY),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -222,6 +230,84 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn sbc(&mut self, addr_mode: AddressMode) {
+        let value: u8;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("adc does not use indeirect")
+            }
+            AddressMode::Accumulator => {
+                value = self.a;
+            }
+            AddressMode::Immediate => {
+                value = self.am_immediate();
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("adc addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::IndirectX => {
+                let addr = self.indirect_x();
+                value = self.bus.read(addr)
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                value = self.bus.read(addr)
+            }
+        }
+        let carry_flag = !self.p & 0x01;
+        let res = self.a as i32  - value as i32 -  carry_flag as i32;
+
+
+        // set carry flag
+        if !(res < 0x00){
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE
+        }
+        // set zero flag
+        if res as u8 == 0{
+            self.p = self.p | 0x02
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // set overflow
+        if (res ^ self.a as i32) & (res ^ !(value as i32)) & 0x80 != 0{
+            self.p = self.p | 0x40;
+        }else{
+            self.p = self.p & 0xBF
+        }
+        // set negative
+        if res & 0x80 == 0x80{
+            self.p = self.p | 0x80
+        }else{
+            self.p = self.p & 0x7F
+        }
+        self.a = res as u8;
     }
     pub fn cpx(&mut self, addr_mode: AddressMode) {
         let mut value = 0x00;
