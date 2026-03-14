@@ -81,9 +81,9 @@ impl CPU {
             0x61 => self.adc(AddressMode::IndirectX),
             0x71 => self.adc(AddressMode::IndirectY),
             // ROR
-            0x76 => self.ror(AddressMode::Immediate),
             0x6A => self.ror(AddressMode::Accumulator),
             0x66 => self.ror(AddressMode::ZeroPage),
+            0x76 => self.ror(AddressMode::ZeroPageX),
             0x6E => self.ror(AddressMode::Absolute),
             0x7E => self.ror(AddressMode::AbsoluteX),
             // JMP
@@ -215,6 +215,8 @@ impl CPU {
             0xE8 => self.inx(),
             // Decrement Y
             0x88 => self.dey(),
+            // Decrement X
+            0xCA => self.dex(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -237,8 +239,26 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn dex(&mut self){
+        self.x = self.x.wrapping_sub(1);
+
+        // set zero flag
+        if self.x == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.x & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+    }
     pub fn dey(&mut self){
-        self.y = self.y - 1;
+        self.y = self.y.wrapping_sub(1);
 
         // set zero flag
         if self.y == 0 {
@@ -256,9 +276,9 @@ impl CPU {
         }
     }
     pub fn inx(&mut self){
-        self.x = self.x + 1;
+        self.x = self.x.wrapping_add(1);
 
-        // set zero flag
+        // set zero flag 
         if self.x == 0 {
             self.p = self.p | 0x02;
         } else {
@@ -274,7 +294,7 @@ impl CPU {
         }
     }
     pub fn iny(&mut self){
-        self.y = self.y + 1;
+        self.y = self.y.wrapping_add(1);
 
         // set zero flag
         if self.y == 0 {
