@@ -217,6 +217,8 @@ impl CPU {
             0x88 => self.dey(),
             // Decrement X
             0xCA => self.dex(),
+            // Transfer A to Y
+            0xA8 => self.tay(),
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
             // unoffical noop
@@ -238,6 +240,25 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn tay(&mut self){
+        self.y = self.a;
+
+        // set zero flag
+        if self.y == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.y & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+
     }
     pub fn dex(&mut self){
         self.x = self.x.wrapping_sub(1);
