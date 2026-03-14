@@ -225,6 +225,8 @@ impl CPU {
             0x98 => self.tya(),
             // Trasnfer X to A
             0x8A => self.txa(),
+            // Tansfer Stack Pointer to X
+            0xBA => self.tsx(),
 
 
             // LDA
@@ -248,6 +250,25 @@ impl CPU {
         //     println!("{}", self.bus.read(print_addr));
         //     print_addr += 1;
         // }
+    }
+    pub fn tsx(&mut self){
+        self.x = self.sp;
+
+        // set zero flag
+        if self.a == 0 {
+            self.p = self.p | 0x02;
+        } else {
+            self.p = self.p & 0xFD
+        }
+        // negative
+        let is_negative = self.a & 0x80;
+
+        if is_negative == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+
     }
     pub fn txa(&mut self){
         self.a = self.x;
