@@ -29,6 +29,9 @@ impl Bus {
     }
 
     pub fn write(&mut self, addr: u16, value: u8) {
+        if addr == 0x07FF{
+            println!("something wrote to 07FF Value{}", value);
+        }
         if addr <= 0x1FFF {
             if addr > 0x07FF {
                 let mask = addr & 0x07FF;

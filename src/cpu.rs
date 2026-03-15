@@ -227,10 +227,19 @@ impl CPU {
             0x8A => self.txa(),
             // Tansfer Stack Pointer to X
             0xBA => self.tsx(),
+            // Trasnfer X to Stack pointer
+            0x9A => self.txs(),
 
 
             // LDA
             0xA9 => self.lda(AddressMode::Immediate),
+            0xA5 => self.lda(AddressMode::ZeroPage),
+            0xB5 => self.lda(AddressMode::ZeroPageX),
+            0xAD => self.lda(AddressMode::Absolute),
+            0xBD => self.lda(AddressMode::AbsoluteX),
+            0xB9 => self.lda(AddressMode::AbsoluteY),
+            0xA1 => self.lda(AddressMode::IndirectX),
+            0xB1 => self.lda(AddressMode::IndirectY),
             // unoffical noop
             0xEA => self.noop(),
             0xFA => self.noop(),
@@ -251,17 +260,22 @@ impl CPU {
         //     print_addr += 1;
         // }
     }
+    pub fn txs(&mut self){
+        self.sp = self.x;
+
+    }
     pub fn tsx(&mut self){
         self.x = self.sp;
 
+
         // set zero flag
-        if self.a == 0 {
+        if self.x == 0 {
             self.p = self.p | 0x02;
         } else {
             self.p = self.p & 0xFD
         }
         // negative
-        let is_negative = self.a & 0x80;
+        let is_negative = self.x & 0x80;
 
         if is_negative == 0x80 {
             self.p = self.p | 0x80;
@@ -1357,7 +1371,7 @@ impl CPU {
     }
 
     pub fn stx(&mut self, addr_mode: AddressMode) {
-        let mem_addr: u8;
+        let mem_addr: u16;
         match addr_mode {
             AddressMode::Relative => {
                 panic!("does not use indrect")
@@ -1372,19 +1386,18 @@ impl CPU {
                 panic!("stx addrmode not implemented")
             }
             AddressMode::Absolute => {
-                let addr = self.am_absolute();
-                mem_addr = self.bus.read(addr);
+                mem_addr = self.am_absolute();
             }
             AddressMode::ZeroPage => {
-                let addr = self.zero_page();
-                mem_addr = self.bus.read(addr as u16);
+                mem_addr = self.zero_page() as u16;
+
             }
             AddressMode::ZeroPageX => {
                 panic!("stx addrmode not implemented")
             }
             AddressMode::ZeroPageY => {
-                let addr = self.zero_page_y();
-                mem_addr = self.bus.read(addr as u16);
+                mem_addr = self.zero_page_y() as u16;
+
             }
             AddressMode::AbsoluteX => {
                 panic!("stx addrmode not implemented")
@@ -1399,7 +1412,7 @@ impl CPU {
                 panic!("stx addrmode not implemented")
             }
         }
-
+        println!("sore x {} : x = {:02X}", mem_addr, self.x);
         self.bus.write(mem_addr as u16, self.x);
     }
 
@@ -1438,6 +1451,7 @@ impl CPU {
             }
             AddressMode::AbsoluteY => {
                 let addr = self.absolute_y();
+
                 value = self.bus.read(addr);
             }
             AddressMode::IndirectX => {
@@ -1479,28 +1493,35 @@ impl CPU {
                 value = self.am_immediate();
             }
             AddressMode::Absolute => {
-                panic!("lad addrmode not implemented")
+                let addr = self.am_absolute();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPage => {
-                panic!("lad addrmode not implemented")
+                let addr = self.zero_page();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPageX => {
-                panic!("lad addrmode not implemented")
+                let addr = self.zero_page_x();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPageY => {
                 panic!("lad addrmode not implemented")
             }
             AddressMode::AbsoluteX => {
-                panic!("lad addrmode not implemented")
+                let addr = self.absolute_x();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::AbsoluteY => {
-                panic!("lad addrmode not implemented")
+                let addr = self.absolute_y();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectX => {
-                panic!("lad addrmode not implemented")
+                let addr = self.indirect_x();
+                value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectY => {
-                panic!("lad addrmode not implemented")
+                let addr = self.indirect_y ();
+                value = self.bus.read(addr as u16);
             }
         }
         self.a = value;
