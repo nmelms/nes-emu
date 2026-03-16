@@ -81,7 +81,7 @@ impl CPU {
             0x75 => self.adc(AddressMode::ZeroPageX),
             0x61 => self.adc(AddressMode::IndirectX),
             0x71 => self.adc(AddressMode::IndirectY),
-            // ROR
+            // Rotate Right
             0x6A => self.ror(AddressMode::Accumulator),
             0x66 => self.ror(AddressMode::ZeroPage),
             0x76 => self.ror(AddressMode::ZeroPageX),
@@ -247,6 +247,13 @@ impl CPU {
             0x56 => self.lsr(AddressMode::ZeroPageX),
             0x4E => self.lsr(AddressMode::Absolute),
             0x5E => self.lsr(AddressMode::AbsoluteX),
+            // Arithmetic Shift Left
+            0x0A => self.asl(AddressMode::Accumulator),
+            0x06 => self.asl(AddressMode::ZeroPage),
+            0x16 => self.asl(AddressMode::ZeroPageX),
+            0x0E => self.asl(AddressMode::Absolute),
+            0x1E => self.asl(AddressMode::AbsoluteX),
+
 
 
 
@@ -260,6 +267,86 @@ impl CPU {
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
+    }
+    pub fn asl(&mut self,addr_mode: AddressMode){
+        let value: u8;
+        let mut addr: u16 = 0x00;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Indirect => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Accumulator => {
+                value = self.a;
+            }
+            AddressMode::Immediate => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Absolute => {
+                addr = self.am_absolute();
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                addr = self.zero_page() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                addr = self.zero_page_x() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("lsr addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                addr = self.absolute_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::IndirectX => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::IndirectY => {
+                panic!("lsr does not use indeirect")
+            }
+        }
+
+
+
+        let carry_flag = value & 0x80;
+        let res = value << 1;
+
+
+        // set carry flag
+        if carry_flag == 0x80 {
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE;
+        }
+        // set zero flag
+        if res as u8 == 0{
+            self.p = self.p | 0x02
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // set negative
+        if res & 0x80 == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
+        
+        
+        if addr_mode == AddressMode::Accumulator{
+            self.a = res as u8; 
+        }else{
+            self.bus.write(addr, res)
+        }
+
     }
     pub fn lsr(&mut self, addr_mode: AddressMode){
         let value: u8;
@@ -1720,12 +1807,25 @@ impl CPU {
 
         value = value >> 1;
         if carry == 0x01 {
-            value = value | 0x80;
+            value = value & 0xFE | 0x80;
+        }else{
+            value = value & 0x7F;
         }
+
+
 
         // clears the lsb on status and or's it with new lsb
         self.p = self.p & 0xFE;
         self.p = self.p | lsb;
+        // set negative
+        let neg_flag = value & 0x80;
+        if neg_flag == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
+        // 1110 0101 -> E5 suppoed to be this
+        // 0110 0101
 
         if addr_mode == AddressMode::Accumulator {
             self.a = value;
