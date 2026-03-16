@@ -68,6 +68,7 @@ impl CPU {
             "{} {:04X}  {:02X}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
             self.line, self.pc, opcode, self.a, self.x, self.y, self.p, self.sp
         );
+        // println!("stack pointer: {:02X}", self.bus.read(self.sp as u16 + 0x0100));
         self.pc += 1;
 
         match opcode {
@@ -246,19 +247,10 @@ impl CPU {
             0x67 => self.noop(),
 
             _ => {
-                // let mut print_addr = 0x6004;
-                // while self.bus.read(print_addr) != 0 {
-                //     print!("{}", self.bus.read(print_addr) as char);
-                //     print_addr += 1;
-                // }
+
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
-        // let mut print_addr = 0x6004;
-        // while self.bus.read(print_addr) != 0 {
-        //     println!("{}", self.bus.read(print_addr));
-        //     print_addr += 1;
-        // }
     }
     pub fn txs(&mut self){
         self.sp = self.x;
@@ -860,6 +852,7 @@ impl CPU {
     }
     pub fn pha(&mut self) {
         let addr = self.sp as u16 + 0x0100;
+        // println!("push a. A = {:02X}", self.a);
         self.bus.write(addr, self.a);
         self.sp -= 1;
     }
@@ -1005,6 +998,7 @@ impl CPU {
     pub fn pla(&mut self) {
         self.sp += 1;
         let addr = 0x0100 + self.sp as u16;
+        // println!("in pla this is the read value: {:02X}", self.bus.read(addr));
         self.a = self.bus.read(addr);
 
         // set zero flag
@@ -1026,6 +1020,7 @@ impl CPU {
     pub fn php(&mut self) {
         let sp_addr = 0x0100 + self.sp as u16;
         let status_flag = self.p | 0x10;
+        // println!("status flag in php: {:02X}", status_flag);
         self.bus.write(sp_addr, status_flag);
         self.sp -= 1;
     }
@@ -1043,7 +1038,7 @@ impl CPU {
         let high = (self.bus.read(self.sp as u16 + 0x0100) as u16) << 8;
 
         let addr = high | low;
-        self.pc = addr as u16;
+        self.pc = addr as u16 + 1;
     }
 
     pub fn bpl(&mut self) {
@@ -1335,6 +1330,7 @@ impl CPU {
             AddressMode::Absolute => {
                 let mut sp = 0x0100 + self.sp as u16;
                 let memory = self.am_absolute();
+                self.pc -= 1;
                 let high_byte = (self.pc >> 8) as u8;
                 let low_byte = self.pc as u8;
 
@@ -1412,7 +1408,7 @@ impl CPU {
                 panic!("stx addrmode not implemented")
             }
         }
-        println!("sore x {} : x = {:02X}", mem_addr, self.x);
+        // println!("sore x {} : x = {:02X}", mem_addr, self.x);
         self.bus.write(mem_addr as u16, self.x);
     }
 
