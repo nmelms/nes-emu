@@ -230,6 +230,8 @@ impl CPU {
             0xBA => self.tsx(),
             // Trasnfer X to Stack pointer
             0x9A => self.txs(),
+            // Return From Interrupt
+            0x40 => self.rti(),
 
 
             // LDA
@@ -251,6 +253,20 @@ impl CPU {
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
+    }
+    pub fn rti(&mut self){
+        self.sp += 1;
+        let status_flag = self.bus.read(0x0100 + self.sp as u16);
+        self.p = status_flag & 0xEF | 0x20;
+
+        self.sp += 1;
+        let low_byte = self.bus.read(0x0100 + self.sp as u16);
+
+        self.sp += 1;
+        let high_byte = self.bus.read(0x0100 + self.sp as u16);
+
+        self.pc = (high_byte as u16) << 8 | low_byte as u16;
+
     }
     pub fn txs(&mut self){
         self.sp = self.x;
