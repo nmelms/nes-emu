@@ -87,6 +87,12 @@ impl CPU {
             0x76 => self.ror(AddressMode::ZeroPageX),
             0x6E => self.ror(AddressMode::Absolute),
             0x7E => self.ror(AddressMode::AbsoluteX),
+            // Rotate Left
+            0x2A => self.rol(AddressMode::Accumulator),
+            0x26 => self.rol(AddressMode::ZeroPage),
+            0x36 => self.rol(AddressMode::ZeroPageX),
+            0x2E => self.rol(AddressMode::Absolute),
+            0x3E => self.rol(AddressMode::AbsoluteX),
             // JMP
             0x4C => self.jmp(AddressMode::Absolute),
             0x6C => self.jmp(AddressMode::Indirect),
@@ -257,6 +263,7 @@ impl CPU {
 
 
 
+
             // unoffical noop
             0xEA => self.noop(),
             0xFA => self.noop(),
@@ -265,6 +272,96 @@ impl CPU {
             _ => {
 
                 panic!("Opcode not implemented: Got {:02X}", opcode)
+            }
+        }
+    }
+
+    pub fn rol(&mut self, addr_mode: AddressMode) {
+        let mut value: u8;
+        let mut address: Option<u16> = None;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                value = self.a;
+            }
+            AddressMode::Immediate => {
+                value = self.am_immediate();
+            }
+            AddressMode::Absolute => {
+                let addr = self.am_absolute();
+                address = Some(addr);
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                let addr = self.zero_page();
+                address = Some(addr as u16);
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                let addr = self.zero_page_x();
+                address = Some(addr as u16);
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("ror addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                let addr = self.absolute_x();
+                address = Some(addr);
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                let addr = self.absolute_y();
+                address = Some(addr);
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::IndirectX => {
+                let addr = self.indirect_x();
+                address = Some(addr);
+                value = self.bus.read(addr)
+            }
+            AddressMode::IndirectY => {
+                let addr = self.indirect_y();
+                address = Some(addr);
+                value = self.bus.read(addr)
+            }
+        }
+
+        let msb = value & 0x80;
+        let carry = self.p & 0x01;
+
+        value = value << 1;
+        // set lsb
+        if carry == 0x01 {
+            value = value | 0x01;
+        }else{
+            value = value & 0xFE;
+        }
+        // set Carry
+        if msb == 0x80{
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE;
+        }
+        // set negative
+        let neg_flag = value & 0x80;
+        if neg_flag == 0x80{
+            self.p = self.p | 0x80;
+        }else{
+            self.p = self.p & 0x7F;
+        }
+
+        if addr_mode == AddressMode::Accumulator {
+            self.a = value;
+        } else {
+            if let Some(addr) = address {
+                self.bus.write(addr, value);
             }
         }
     }
@@ -1928,6 +2025,7 @@ impl CPU {
 
     pub fn indirect_x(&mut self) -> u16 {
         let arg = self.bus.read(self.pc);
+        self.pc += 1;
         let addr1 = arg.wrapping_add(self.x);
         let addr2 = arg.wrapping_add(self.x + 1);
         let val1 = self.bus.read(addr1 as u16) as u16;
@@ -1938,6 +2036,7 @@ impl CPU {
 
     pub fn indirect_y(&mut self) -> u16 {
         let arg = self.bus.read(self.pc);
+        self.pc += 1;
         let addr1 = self.bus.read(arg as u16) as u16;
         let addr2_idx = arg + 1;
         let addr2 = (self.bus.read(addr2_idx as u16) as u16) << 8;
