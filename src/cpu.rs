@@ -210,6 +210,15 @@ impl CPU {
             0xF9 => self.sbc(AddressMode::AbsoluteY),
             0xE1 => self.sbc(AddressMode::IndirectX),
             0xF1 => self.sbc(AddressMode::IndirectY),
+            // LDA
+            0xA9 => self.lda(AddressMode::Immediate),
+            0xA5 => self.lda(AddressMode::ZeroPage),
+            0xB5 => self.lda(AddressMode::ZeroPageX),
+            0xAD => self.lda(AddressMode::Absolute),
+            0xBD => self.lda(AddressMode::AbsoluteX),
+            0xB9 => self.lda(AddressMode::AbsoluteY),
+            0xA1 => self.lda(AddressMode::IndirectX),
+            0xB1 => self.lda(AddressMode::IndirectY),
             // Increment Y
             0xC8 => self.iny(),
             // Increment X
@@ -232,17 +241,15 @@ impl CPU {
             0x9A => self.txs(),
             // Return From Interrupt
             0x40 => self.rti(),
+            // Logical Shift Right
+            0x4A => self.lsr(AddressMode::Accumulator),
+            0x46 => self.lsr(AddressMode::ZeroPage),
+            0x56 => self.lsr(AddressMode::ZeroPageX),
+            0x4E => self.lsr(AddressMode::Absolute),
+            0x5E => self.lsr(AddressMode::AbsoluteX),
 
 
-            // LDA
-            0xA9 => self.lda(AddressMode::Immediate),
-            0xA5 => self.lda(AddressMode::ZeroPage),
-            0xB5 => self.lda(AddressMode::ZeroPageX),
-            0xAD => self.lda(AddressMode::Absolute),
-            0xBD => self.lda(AddressMode::AbsoluteX),
-            0xB9 => self.lda(AddressMode::AbsoluteY),
-            0xA1 => self.lda(AddressMode::IndirectX),
-            0xB1 => self.lda(AddressMode::IndirectY),
+
             // unoffical noop
             0xEA => self.noop(),
             0xFA => self.noop(),
@@ -253,6 +260,81 @@ impl CPU {
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
+    }
+    pub fn lsr(&mut self, addr_mode: AddressMode){
+        let value: u8;
+        let mut addr: u16 = 0x00;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Indirect => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Accumulator => {
+                value = self.a;
+            }
+            AddressMode::Immediate => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::Absolute => {
+                addr = self.am_absolute();
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                addr = self.zero_page() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                addr = self.zero_page_x() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("lsr addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                addr = self.absolute_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::IndirectX => {
+                panic!("lsr does not use indeirect")
+            }
+            AddressMode::IndirectY => {
+                panic!("lsr does not use indeirect")
+            }
+        }
+
+
+
+        let carry_flag = value & 0x01;
+        let res = value >> 1;
+
+
+        // set carry flag
+        if carry_flag == 0x01 {
+            self.p = self.p | 0x01;
+        }else{
+            self.p = self.p & 0xFE
+        }
+        // set zero flag
+        if res as u8 == 0{
+            self.p = self.p | 0x02
+        }else{
+            self.p = self.p & 0xFD
+        }
+        // set negative
+        self.p = self.p & 0x7F;
+        
+        if addr_mode == AddressMode::Accumulator{
+            self.a = res as u8; 
+        }else{
+            self.bus.write(addr, res)
+        }
+
     }
     pub fn rti(&mut self){
         self.sp += 1;
