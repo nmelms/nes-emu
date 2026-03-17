@@ -259,10 +259,15 @@ impl CPU {
             0x16 => self.asl(AddressMode::ZeroPageX),
             0x0E => self.asl(AddressMode::Absolute),
             0x1E => self.asl(AddressMode::AbsoluteX),
-
-
-
-
+            // Store Y
+            0x84 => self.sty(AddressMode::ZeroPage),
+            0x94 => self.sty(AddressMode::ZeroPageX),
+            0x8C => self.sty(AddressMode::Absolute),
+            // Increment Memory
+            0xE6 => self.inc(AddressMode::ZeroPage),
+            0xF6 => self.inc(AddressMode::ZeroPageX),
+            0xEE => self.inc(AddressMode::Absolute),
+            0xFE => self.inc(AddressMode::AbsoluteX),
 
             // unoffical noop
             0xEA => self.noop(),
@@ -270,10 +275,121 @@ impl CPU {
             0x67 => self.noop(),
 
             _ => {
-
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
+    }
+
+    pub fn inc(&mut self, addr_mode: AddressMode) {
+        let value: u8;
+        let mut addr: u16 = 0x00;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Indirect => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Accumulator => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Immediate => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Absolute => {
+                addr = self.am_absolute();
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                addr = self.zero_page() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                addr = self.zero_page_x() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("inc addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                addr = self.absolute_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::IndirectX => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::IndirectY => {
+                panic!("inc does not use indeirect")
+            }
+        }
+        let incremented = value.wrapping_add(1);
+        self.bus.write(addr, incremented);
+
+        // set zero flag
+        println!("addr read from = {:02X} vale = {:02X} incremented = {:02X}" ,addr, value, incremented);
+        if incremented as u8 == 0 {
+            println!("is zero");
+            self.p = self.p | 0x02
+        } else {
+            println!("is not zero");
+            self.p = self.p & 0xFD
+        }
+        // set negative
+        if incremented & 0x80 == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
+        }
+    }
+    // 2196
+
+    pub fn sty(&mut self, addr_mode: AddressMode) {
+        let addr: u16;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::Indirect => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::Accumulator => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::Immediate => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::Absolute => {
+                addr = self.am_absolute();
+            }
+            AddressMode::ZeroPage => {
+                addr = self.zero_page() as u16;
+            }
+            AddressMode::ZeroPageX => {
+                addr = self.zero_page_x() as u16;
+            }
+            AddressMode::ZeroPageY => {
+                panic!("ror addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::AbsoluteY => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::IndirectX => {
+                panic!("ror does not use indrect")
+            }
+            AddressMode::IndirectY => {
+                panic!("ror does not use indrect")
+            }
+        }
+
+        self.bus.write(addr, self.y);
     }
 
     pub fn rol(&mut self, addr_mode: AddressMode) {
@@ -340,20 +456,20 @@ impl CPU {
         // set lsb
         if carry == 0x01 {
             value = value | 0x01;
-        }else{
+        } else {
             value = value & 0xFE;
         }
         // set Carry
-        if msb == 0x80{
+        if msb == 0x80 {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE;
         }
         // set negative
         let neg_flag = value & 0x80;
-        if neg_flag == 0x80{
+        if neg_flag == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
 
@@ -365,7 +481,7 @@ impl CPU {
             }
         }
     }
-    pub fn asl(&mut self,addr_mode: AddressMode){
+    pub fn asl(&mut self, addr_mode: AddressMode) {
         let value: u8;
         let mut addr: u16 = 0x00;
 
@@ -411,41 +527,36 @@ impl CPU {
                 panic!("lsr does not use indeirect")
             }
         }
-
-
 
         let carry_flag = value & 0x80;
         let res = value << 1;
 
-
         // set carry flag
         if carry_flag == 0x80 {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE;
         }
         // set zero flag
-        if res as u8 == 0{
+        if res as u8 == 0 {
             self.p = self.p | 0x02
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // set negative
-        if res & 0x80 == 0x80{
+        if res & 0x80 == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
-        
-        
-        if addr_mode == AddressMode::Accumulator{
-            self.a = res as u8; 
-        }else{
+
+        if addr_mode == AddressMode::Accumulator {
+            self.a = res as u8;
+        } else {
             self.bus.write(addr, res)
         }
-
     }
-    pub fn lsr(&mut self, addr_mode: AddressMode){
+    pub fn lsr(&mut self, addr_mode: AddressMode) {
         let value: u8;
         let mut addr: u16 = 0x00;
 
@@ -492,35 +603,31 @@ impl CPU {
             }
         }
 
-
-
         let carry_flag = value & 0x01;
         let res = value >> 1;
-
 
         // set carry flag
         if carry_flag == 0x01 {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE
         }
         // set zero flag
-        if res as u8 == 0{
+        if res as u8 == 0 {
             self.p = self.p | 0x02
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // set negative
         self.p = self.p & 0x7F;
-        
-        if addr_mode == AddressMode::Accumulator{
-            self.a = res as u8; 
-        }else{
+
+        if addr_mode == AddressMode::Accumulator {
+            self.a = res as u8;
+        } else {
             self.bus.write(addr, res)
         }
-
     }
-    pub fn rti(&mut self){
+    pub fn rti(&mut self) {
         self.sp += 1;
         let status_flag = self.bus.read(0x0100 + self.sp as u16);
         self.p = status_flag & 0xEF | 0x20;
@@ -532,15 +639,12 @@ impl CPU {
         let high_byte = self.bus.read(0x0100 + self.sp as u16);
 
         self.pc = (high_byte as u16) << 8 | low_byte as u16;
-
     }
-    pub fn txs(&mut self){
+    pub fn txs(&mut self) {
         self.sp = self.x;
-
     }
-    pub fn tsx(&mut self){
+    pub fn tsx(&mut self) {
         self.x = self.sp;
-
 
         // set zero flag
         if self.x == 0 {
@@ -556,9 +660,8 @@ impl CPU {
         } else {
             self.p = self.p & 0x7F;
         }
-
     }
-    pub fn txa(&mut self){
+    pub fn txa(&mut self) {
         self.a = self.x;
 
         // set zero flag
@@ -575,9 +678,8 @@ impl CPU {
         } else {
             self.p = self.p & 0x7F;
         }
-
     }
-    pub fn tya(&mut self){
+    pub fn tya(&mut self) {
         self.a = self.y;
 
         // set zero flag
@@ -594,9 +696,8 @@ impl CPU {
         } else {
             self.p = self.p & 0x7F;
         }
-
     }
-    pub fn tax(&mut self){
+    pub fn tax(&mut self) {
         self.x = self.a;
 
         // set zero flag
@@ -613,9 +714,8 @@ impl CPU {
         } else {
             self.p = self.p & 0x7F;
         }
-
     }
-    pub fn tay(&mut self){
+    pub fn tay(&mut self) {
         self.y = self.a;
 
         // set zero flag
@@ -632,9 +732,8 @@ impl CPU {
         } else {
             self.p = self.p & 0x7F;
         }
-
     }
-    pub fn dex(&mut self){
+    pub fn dex(&mut self) {
         self.x = self.x.wrapping_sub(1);
 
         // set zero flag
@@ -652,7 +751,7 @@ impl CPU {
             self.p = self.p & 0x7F;
         }
     }
-    pub fn dey(&mut self){
+    pub fn dey(&mut self) {
         self.y = self.y.wrapping_sub(1);
 
         // set zero flag
@@ -670,10 +769,10 @@ impl CPU {
             self.p = self.p & 0x7F;
         }
     }
-    pub fn inx(&mut self){
+    pub fn inx(&mut self) {
         self.x = self.x.wrapping_add(1);
 
-        // set zero flag 
+        // set zero flag
         if self.x == 0 {
             self.p = self.p | 0x02;
         } else {
@@ -688,7 +787,7 @@ impl CPU {
             self.p = self.p & 0x7F;
         }
     }
-    pub fn iny(&mut self){
+    pub fn iny(&mut self) {
         self.y = self.y.wrapping_add(1);
 
         // set zero flag
@@ -755,31 +854,30 @@ impl CPU {
             }
         }
         let carry_flag = !self.p & 0x01;
-        let res = self.a as i32  - value as i32 -  carry_flag as i32;
-
+        let res = self.a as i32 - value as i32 - carry_flag as i32;
 
         // set carry flag
-        if !(res < 0x00){
+        if !(res < 0x00) {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE
         }
         // set zero flag
-        if res as u8 == 0{
+        if res as u8 == 0 {
             self.p = self.p | 0x02
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // set overflow
-        if (res ^ self.a as i32) & (res ^ !(value as i32)) & 0x80 != 0{
+        if (res ^ self.a as i32) & (res ^ !(value as i32)) & 0x80 != 0 {
             self.p = self.p | 0x40;
-        }else{
+        } else {
             self.p = self.p & 0xBF
         }
         // set negative
-        if res & 0x80 == 0x80{
+        if res & 0x80 == 0x80 {
             self.p = self.p | 0x80
-        }else{
+        } else {
             self.p = self.p & 0x7F
         }
         self.a = res as u8;
@@ -940,10 +1038,16 @@ impl CPU {
             }
             AddressMode::ZeroPage => {
                 let addr = self.zero_page();
+                println!(
+                    "zero page addr: {:02X}, value at addr: {:02X}",
+                    addr,
+                    self.bus.read(addr as u16)
+                );
                 value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPageX => {
                 let addr = self.zero_page_x();
+
                 value = self.bus.read(addr as u16);
             }
             AddressMode::ZeroPageY => {
@@ -965,6 +1069,7 @@ impl CPU {
             }
         }
 
+        println!("value in ldy {:02X}", value);
         self.y = value;
 
         // set zero flag
@@ -1476,7 +1581,7 @@ impl CPU {
 
     pub fn bne(&mut self) {
         let zero_flag = self.p & 0x02;
-        if zero_flag == 0 {
+        if zero_flag == 0x00 {
             let offset: i8 = self.bus.read(self.pc) as i8;
             self.pc += 1;
             self.pc = (self.pc as i32 + offset as i32) as u16
@@ -1494,7 +1599,7 @@ impl CPU {
             self.pc += 1;
         }
     }
-
+// 2198
     pub fn bcc(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
@@ -1668,14 +1773,12 @@ impl CPU {
             }
             AddressMode::ZeroPage => {
                 mem_addr = self.zero_page() as u16;
-
             }
             AddressMode::ZeroPageX => {
                 panic!("stx addrmode not implemented")
             }
             AddressMode::ZeroPageY => {
                 mem_addr = self.zero_page_y() as u16;
-
             }
             AddressMode::AbsoluteX => {
                 panic!("stx addrmode not implemented")
@@ -1798,7 +1901,7 @@ impl CPU {
                 value = self.bus.read(addr as u16);
             }
             AddressMode::IndirectY => {
-                let addr = self.indirect_y ();
+                let addr = self.indirect_y();
                 value = self.bus.read(addr as u16);
             }
         }
@@ -1905,20 +2008,18 @@ impl CPU {
         value = value >> 1;
         if carry == 0x01 {
             value = value & 0xFE | 0x80;
-        }else{
+        } else {
             value = value & 0x7F;
         }
-
-
 
         // clears the lsb on status and or's it with new lsb
         self.p = self.p & 0xFE;
         self.p = self.p | lsb;
         // set negative
         let neg_flag = value & 0x80;
-        if neg_flag == 0x80{
+        if neg_flag == 0x80 {
             self.p = self.p | 0x80;
-        }else{
+        } else {
             self.p = self.p & 0x7F;
         }
         // 1110 0101 -> E5 suppoed to be this
@@ -1982,31 +2083,30 @@ impl CPU {
             }
         }
 
-
         let res = self.a as u16 + value as u16 + (self.p & 0x01) as u16;
 
         // set carry flag
-        if res as u16 > 0xFF{
+        if res as u16 > 0xFF {
             self.p = self.p | 0x01;
-        }else{
+        } else {
             self.p = self.p & 0xFE
         }
         // set zero flag
-        if res as u8 == 0{
+        if res as u8 == 0 {
             self.p = self.p | 0x02
-        }else{
+        } else {
             self.p = self.p & 0xFD
         }
         // set overflow
-        if (res ^ self.a as u16) & (res ^ value as u16) & 0x80 != 0{
+        if (res ^ self.a as u16) & (res ^ value as u16) & 0x80 != 0 {
             self.p = self.p | 0x40;
-        }else{
+        } else {
             self.p = self.p & 0xBF
         }
         // set negative
-        if res & 0x80 == 0x80{
+        if res & 0x80 == 0x80 {
             self.p = self.p | 0x80
-        }else{
+        } else {
             self.p = self.p & 0x7F
         }
         self.a = res as u8;
@@ -2057,6 +2157,7 @@ impl CPU {
     }
     pub fn zero_page_x(&mut self) -> u8 {
         let arg = self.bus.read(self.pc);
+        self.pc += 1;
         // using wrapping add instead of % 256
         let addr = arg.wrapping_add(self.x);
         addr

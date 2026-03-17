@@ -29,7 +29,7 @@ impl Bus {
     }
 
     pub fn write(&mut self, addr: u16, value: u8) {
-        // if addr >= 0x0100 && addr <= 0x01FF {
+        // if addr == 0x78 {
         //     println!("stack write: addr {:04X} value {:02X}", addr, value);
         // }
         if addr <= 0x1FFF {
