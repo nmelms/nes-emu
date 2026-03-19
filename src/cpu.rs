@@ -277,7 +277,8 @@ impl CPU {
             0xEA => self.noop(),
             // Clear Interrupt Disable
             0x58 => self.cli(),
-
+            // BREAK
+            0x00 => {panic!("you can break but its not impemented");}
             // unoffical noop
             0xFA => self.noop(),
             0x67 => self.noop(),
