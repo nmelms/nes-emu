@@ -273,9 +273,12 @@ impl CPU {
             0xD6 => self.dec(AddressMode::ZeroPageX),
             0xCE => self.dec(AddressMode::Absolute),
             0xDE => self.dec(AddressMode::AbsoluteX),
+            // Official noop
+            0xEA => self.noop(),
+            // Clear Interrupt Disable
+            0x58 => self.cli(),
 
             // unoffical noop
-            0xEA => self.noop(),
             0xFA => self.noop(),
             0x67 => self.noop(),
 
@@ -283,6 +286,9 @@ impl CPU {
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
         }
+    }
+    pub fn cli(&mut self){
+        self.p &= !0x04;
     }
     pub fn dec(&mut self, addr_mode: AddressMode) {
         let value: u8;
@@ -1667,7 +1673,7 @@ impl CPU {
             self.pc += 1;
         }
     }
-// 2198
+    // 2198
     pub fn bcc(&mut self, addr_mode: AddressMode) {
         match addr_mode {
             AddressMode::Relative => {
@@ -1998,15 +2004,15 @@ impl CPU {
                 if addr & 0xFF == 0xFF {
                     // 6502 JMP BUG
                     let low = self.bus.read(addr) as u16;
-                    let high = (self.bus.read(addr & 0xFF00) as u16) << 8 ;
+                    let high = (self.bus.read(addr & 0xFF00) as u16) << 8;
                     self.pc = high | low
-                }else{
+                } else {
                     let low = self.bus.read(addr) as u16;
-                    let high = (self.bus.read(addr + 1) as u16) << 8 ;
-                
+                    let high = (self.bus.read(addr + 1) as u16) << 8;
+
                     self.pc = high | low
                 }
-            },
+            }
             AddressMode::Accumulator => {}
             AddressMode::Immediate => {}
             AddressMode::Absolute => {
@@ -2245,6 +2251,7 @@ impl CPU {
     }
     pub fn zero_page_y(&mut self) -> u8 {
         let arg = self.bus.read(self.pc);
+        self.pc += 1;
         // using wrapping add instead of % 256
         let addr = arg.wrapping_add(self.y);
         addr
