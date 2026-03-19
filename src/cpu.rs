@@ -268,6 +268,11 @@ impl CPU {
             0xF6 => self.inc(AddressMode::ZeroPageX),
             0xEE => self.inc(AddressMode::Absolute),
             0xFE => self.inc(AddressMode::AbsoluteX),
+            // Decrement Memory
+            0xC6 => self.dec(AddressMode::ZeroPage),
+            0xD6 => self.dec(AddressMode::ZeroPageX),
+            0xCE => self.dec(AddressMode::Absolute),
+            0xDE => self.dec(AddressMode::AbsoluteX),
 
             // unoffical noop
             0xEA => self.noop(),
@@ -277,6 +282,70 @@ impl CPU {
             _ => {
                 panic!("Opcode not implemented: Got {:02X}", opcode)
             }
+        }
+    }
+    pub fn dec(&mut self, addr_mode: AddressMode) {
+        let value: u8;
+        let mut addr: u16 = 0x00;
+
+        match addr_mode {
+            AddressMode::Relative => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Indirect => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Accumulator => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Immediate => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::Absolute => {
+                addr = self.am_absolute();
+                value = self.bus.read(addr)
+            }
+            AddressMode::ZeroPage => {
+                addr = self.zero_page() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageX => {
+                addr = self.zero_page_x() as u16;
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::ZeroPageY => {
+                panic!("inc addrmode not implemented")
+            }
+            AddressMode::AbsoluteX => {
+                addr = self.absolute_x();
+                value = self.bus.read(addr as u16)
+            }
+            AddressMode::AbsoluteY => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::IndirectX => {
+                panic!("inc does not use indeirect")
+            }
+            AddressMode::IndirectY => {
+                panic!("inc does not use indeirect")
+            }
+        }
+        let incremented = value.wrapping_sub(1);
+        self.bus.write(addr, incremented);
+
+        // set zero flag
+        if incremented as u8 == 0 {
+            println!("is zero");
+            self.p = self.p | 0x02
+        } else {
+            println!("is not zero");
+            self.p = self.p & 0xFD
+        }
+        // set negative
+        if incremented & 0x80 == 0x80 {
+            self.p = self.p | 0x80;
+        } else {
+            self.p = self.p & 0x7F;
         }
     }
 
@@ -330,7 +399,6 @@ impl CPU {
         self.bus.write(addr, incremented);
 
         // set zero flag
-        println!("addr read from = {:02X} vale = {:02X} incremented = {:02X}" ,addr, value, incremented);
         if incremented as u8 == 0 {
             println!("is zero");
             self.p = self.p | 0x02
@@ -1925,7 +1993,20 @@ impl CPU {
             AddressMode::Relative => {
                 panic!("does not use indrect")
             }
-            AddressMode::Indirect => self.pc = self.indirect(),
+            AddressMode::Indirect => {
+                let addr = self.am_absolute();
+                if addr & 0xFF == 0xFF {
+                    // 6502 JMP BUG
+                    let low = self.bus.read(addr) as u16;
+                    let high = (self.bus.read(addr & 0xFF00) as u16) << 8 ;
+                    self.pc = high | low
+                }else{
+                    let low = self.bus.read(addr) as u16;
+                    let high = (self.bus.read(addr + 1) as u16) << 8 ;
+                
+                    self.pc = high | low
+                }
+            },
             AddressMode::Accumulator => {}
             AddressMode::Immediate => {}
             AddressMode::Absolute => {
@@ -2138,9 +2219,9 @@ impl CPU {
         let arg = self.bus.read(self.pc);
         self.pc += 1;
         let addr1 = self.bus.read(arg as u16) as u16;
-        let addr2_idx = arg + 1;
+        let addr2_idx = arg.wrapping_add(1);
         let addr2 = (self.bus.read(addr2_idx as u16) as u16) << 8;
-        let combined_addr = (addr1 | addr2) + self.y as u16;
+        let combined_addr = (addr1 | addr2).wrapping_add(self.y as u16);
         combined_addr
     }
 
@@ -2172,20 +2253,22 @@ impl CPU {
     pub fn absolute_y(&mut self) -> u16 {
         let first_byte: u16;
         let second_byte: u16;
-        first_byte = (self.bus.read(self.pc) as u16) << 8;
+        first_byte = self.bus.read(self.pc) as u16;
         self.pc += 1;
-        second_byte = self.bus.read(self.pc) as u16;
-        let arg = first_byte | second_byte;
-        let addr = arg + self.y as u16;
+        second_byte = (self.bus.read(self.pc) as u16) << 8;
+        self.pc += 1;
+        let arg = second_byte | first_byte;
+        let addr = arg.wrapping_add(self.y as u16);
         addr
     }
 
     pub fn absolute_x(&mut self) -> u16 {
         let first_byte: u16;
         let second_byte: u16;
-        first_byte = (self.bus.read(self.pc) as u16) << 8;
+        first_byte = self.bus.read(self.pc) as u16;
         self.pc += 1;
-        second_byte = self.bus.read(self.pc) as u16;
+        second_byte = (self.bus.read(self.pc) as u16) << 8;
+        self.pc += 1;
         let arg = first_byte | second_byte;
         let addr = arg + self.x as u16;
         addr
